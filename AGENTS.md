@@ -20,16 +20,18 @@ Sistema de nómina para reportar pagos recibidos por plataformas (OnlyFans, etc.
 ```dotenv
 APP_NAME=Nomina
 DB_CONNECTION=pgsql
-DB_HOST=<proyecto>.supabase.co
+DB_HOST=aws-0-<region>.pooler.supabase.com
 DB_PORT=5432
 DB_DATABASE=postgres
-DB_USERNAME=postgres
+DB_USERNAME=postgres.<project-ref>
 DB_PASSWORD=<contraseña>
 DB_SSLMODE=require
 ```
 
-3. Generar esquema: `php artisan migrate` (crea las tablas del esquema).
-4. Datos base: `php artisan db:seed` (roles y métodos de pago iniciales).
+3. Las tablas del negocio ya existen en Supabase (creadas desde el panel); NO se vuelven a migrar. Para sincronizar Laravel:
+   - `php artisan migrate:install` (crea la tabla `migrations`).
+   - Registrar como aplicadas las migraciones de las tablas ya existentes o usar `php artisan migrate --force` para crear solo `users`/`sessions`/`cache`/`jobs` (con `SESSION_DRIVER=database` la tabla `sessions` es obligatoria).
+4. NO ejecutar `db:seed` si ya hay datos reales en Supabase (sobrescribiría roles/métodos).
 
 ## Esquema de base de datos
 
@@ -80,6 +82,7 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 
 ## Notas
 
-- El proyecto NO corre dentro de Cloudflare Workers; para eso se eligió Laravel Cloud.
-- El valor `DB_PASSWORD` y `DB_HOST` quedaron marcados como reemplazables en `.env`; no deben subirse al repositorio (`.env` ya está en `.gitignore`).
+- El proyecto NO corre dentro de Cloudflare Workers ni en **Vercel** (Vercel no ejecuta PHP).
+- El host directo de Supabase (`db.<ref>.supabase.co:5432`) es **solo IPv6**; PHP y Vercel/Lambda (egress IPv4) necesitan el **connection pooler** (`aws-0-<region>.pooler.supabase.com:5432`, usuario `postgres.<ref>`).
+- El valor `DB_PASSWORD` está en `.env`; no debe subirse al repositorio (`.env` ya está en `.gitignore`).
 - Para desarrollo local sin Supabase se puede cambiar temporalmente `DB_CONNECTION=sqlite` (el archivo `database/database.sqlite` ya existe localmente).
