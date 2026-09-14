@@ -21,12 +21,14 @@ Sistema de nómina para reportar pagos recibidos por plataformas (OnlyFans, etc.
 APP_NAME=Nomina
 DB_CONNECTION=pgsql
 DB_HOST=aws-0-<region>.pooler.supabase.com
-DB_PORT=5432
+DB_PORT=6543
 DB_DATABASE=postgres
 DB_USERNAME=postgres.<project-ref>
 DB_PASSWORD=<contraseña>
 DB_SSLMODE=require
 ```
+
+Nota pooler: puerto **6543 = modo transacción** (conexiones cortas; recomendado para PHP) · **5432 = modo sesión** (conexiones persistentes; se satura fácilmente con forkeo de conexiones). La app usa 6543.
 
 3. Las tablas del negocio ya existen en Supabase (creadas desde el panel); NO se vuelven a migrar. Para sincronizar Laravel:
    - `php artisan migrate:install` (crea la tabla `migrations`).
@@ -72,6 +74,32 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 - Lint: `vendor\bin\pint` (listas de archivos explícitas si no hay git)
 - Compilar vistas: `php artisan view:cache`
 
+## Deploy gratis: Google Cloud e2-micro (always free)
+
+InfinityFree (gratis) **no permite** conexiones salientes a BDs externas ni tiene `pdo_pgsql`; verificado en su foro. Opción gratis que sí funciona con Supabase: **VM e2-micro de Google Cloud** (level always-free: sin expiración; la tarjeta solo se pide para verificar, no se cobra dentro del límite).
+
+1. Crear proyecto en Google Cloud Console y activar Billing (verificación con tarjeta, sin cargo).
+2. Habilitar Compute Engine y crear una VM:
+   - Máquina: **e2-micro** (solo en regiones `us-west1`, `us-central1` o `us-east1` para mantenerse en el nivel gratis).
+   - Disco: 30 GB estándar. Sistema: **Ubuntu 24.04**.
+3. Abrir tráfico HTTP/HTTPS (firewall GCP). Con `gcloud`:
+   `gcloud compute firewall-rules create allow-http-https --allow tcp:80,tcp:443`
+4. Subir el código:
+   - Opción A (recomendada): subir el proyecto a GitHub y luego `git clone` en la VM.
+   - Opción B: `rsync -av --exclude=.env --exclude=vendor --exclude=.git ./ usuario@IP:/var/www/nomina/`
+5. Ejecutar el aprovisionamiento (SCRIPT: `deploy/server-setup.sh`):
+   ```
+   SERVER_DB_HOST='aws-0-us-west-2.pooler.supabase.com' \
+   SERVER_DB_USERNAME='postgres.<project-ref>' \
+   SERVER_DB_PASSWORD='<clave>' \
+   REPO_URL='git@github.com:tu/nomina.git' \
+   bash deploy/server-setup.sh
+   ```
+   El script instala Nginx + PHP-FPM + `pdo_pgsql` + Composer, crea `.env`, cachea config y deja la app en `/var/www/nomina`.
+6. Si faltara algo en la BD remota: `cd /var/www/nomina && php artisan migrate --force`.
+7. Para dominio propio + HTTPS gratis: instalar `certbot` y configurar `APP_URL` en `.env` (y re-cachear `config`).
+8. Recordatorios: NO subir `.env` a git; NO ejecutar `db:seed` sobre datos reales.
+
 ## Deploy a Laravel Cloud
 
 1. Inicializar git en la raíz del proyecto y subir a GitHub.
@@ -82,7 +110,7 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 
 ## Notas
 
-- El proyecto NO corre dentro de Cloudflare Workers ni en **Vercel** (Vercel no ejecuta PHP).
-- El host directo de Supabase (`db.<ref>.supabase.co:5432`) es **solo IPv6**; PHP y Vercel/Lambda (egress IPv4) necesitan el **connection pooler** (`aws-0-<region>.pooler.supabase.com:5432`, usuario `postgres.<ref>`).
+- El proyecto NO corre dentro de Cloudflare Workers, **Vercel** ni **InfinityFree gratis** (Vercel y Workers no ejecutan PHP; InfinityFree bloquea BDs externas y no tiene pdo_pgsql).
+- El host directo de Supabase (`db.<ref>.supabase.co:5432`) es **solo IPv6**; PHP y Vercel/Lambda (egress IPv4) necesitan el **connection pooler** (`aws-0-<region>.pooler.supabase.com`, usuario `postgres.<ref>`, puerto **6543** — modos: 6543 transacción / 5432 sesión).
 - El valor `DB_PASSWORD` está en `.env`; no debe subirse al repositorio (`.env` ya está en `.gitignore`).
 - Para desarrollo local sin Supabase se puede cambiar temporalmente `DB_CONNECTION=sqlite` (el archivo `database/database.sqlite` ya existe localmente).
