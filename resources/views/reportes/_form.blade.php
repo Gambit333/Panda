@@ -10,7 +10,7 @@
             <label>Modelo *</label>
             <select name="id_modelo" required>
                 <option value="">Seleccionar...</option>
-                @foreach ($trabajadores as $trab)
+                @foreach ($modelos as $trab)
                     <option value="{{ $trab->id_trab }}" @selected(old('id_modelo', $reporte?->id_modelo) == $trab->id_trab)>
                         {{ $trab->nombre_completo }}
                     </option>
