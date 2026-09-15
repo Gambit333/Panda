@@ -2,19 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Trabajador extends Model
+class Trabajador extends Model implements AuthenticatableContract
 {
+    use Authenticatable;
+
     public $timestamps = false;
 
     protected $table = 'trabajador';
 
     protected $primaryKey = 'id_trab';
 
-    protected $fillable = ['nombre', 'apellido', 'telefono', 'email', 'direccion', 'id_rol'];
+    protected $fillable = ['nombre', 'apellido', 'telefono', 'email', 'direccion', 'id_rol', 'password'];
+
+    protected $hidden = ['password'];
 
     public function rol(): BelongsTo
     {

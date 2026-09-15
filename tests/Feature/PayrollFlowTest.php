@@ -9,6 +9,7 @@ use App\Models\ReportePago;
 use App\Models\Rol;
 use App\Models\Trabajador;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class PayrollFlowTest extends TestCase
@@ -19,6 +20,12 @@ class PayrollFlowTest extends TestCase
     {
         $rolModerador = Rol::create(['rol' => 'Moderador']);
         $rolModelo = Rol::create(['rol' => 'Modelo']);
+
+        $usuario = Trabajador::create([
+            'nombre' => 'Admin', 'apellido' => 'Root', 'email' => 'admin@nomina.test',
+            'id_rol' => $rolModerador->id_rol, 'password' => Hash::make('secreto123'),
+        ]);
+        $this->actingAs($usuario);
 
         $moderador = Trabajador::create([
             'nombre' => 'Ana', 'apellido' => 'Perez', 'id_rol' => $rolModerador->id_rol,

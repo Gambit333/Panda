@@ -58,13 +58,23 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 
 | Ruta raíz | Módulo | Notas |
 |---|---|---|
-| `/` | Dashboard | estadísticas + últimos reportes/cierres |
+| `/login` | Login | GET/POST email (protegido con `guest`); `/login/password` para contraseña |
+| `/logout` | Logout | POST, invalida sesión |
+| `/` | Dashboard | requiere `auth` |
 | `/reportes` | Reportes de pago | CRUD completo |
 | `/cierres` | Cierres semanales | index / create / store / show / destroy |
 | `/pagos` | Pagos a empleados | CRUD completo |
 | `/trabajadores` | Trabajadores | CRUD completo |
 | `/metodos` | Métodos de pago | CRUD completo |
 | `/roles` | Roles | CRUD completo |
+
+## Autenticación
+
+- Login por **email** contra `trabajador.email` (case-insensitive) en `LoginController`. Todo el sitio (menos `/login*`) está protegido con middleware `auth` (redirect a `route('login')` por defecto del framework).
+- **Primer ingreso**: si el trabajador no tiene `password`, se le pide crearla dos veces y se guarda con `Hash::make`. Si ya tiene, se valida con `Hash::check`.
+- Auth sobre el modelo `Trabajador` (implementa `Authenticatable` con el trait de Laravel); provider `users` (config/auth.php) apunta a `App\Models\Trabajador`. Columna `password` (nullable, hashed) agregada vía migración `2026_09_15_023128_add_password_to_trabajador_table`.
+- Sesión `database` con `SESSION_EXPIRE_ON_CLOSE=true` + **timeout por actividad** middleware `session.timeout`: cada pestaña abierta hace POST a `/session/keepalive` cada 2 s (JS en `layouts/app.blade.php`); si el servidor no recibe pings y `session_last_seen` supera 5 s, invalida la sesión y redirige a `/login`. Efecto: el token muere ~5 s después de cerrar la última pestaña. El email pendiente del login vive en `session('auth_email')`.
+- Tests: `tests/Feature/AuthFlowTest.php` (set de contraseña, login correcto/incorrecto, redirect de invitados).
 
 ## Comandos útiles
 

@@ -99,6 +99,13 @@
     <div class="main">
         <header class="topbar">
             <h1>@yield('title', 'Dashboard')</h1>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="muted" style="font-size: .85rem;">{{ Auth::user()->email }}</span>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary btn-sm">Cerrar sesión</button>
+                </form>
+            </div>
         </header>
         <main class="content">
             @if (session('success'))
@@ -108,5 +115,21 @@
         </main>
     </div>
 </div>
+<script>
+(function () {
+    function ping() {
+        fetch('{{ route('session.keepalive') }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            cache: 'no-store',
+            credentials: 'same-origin'
+        }).catch(function () {});
+    }
+    setInterval(ping, 2000);
+}());
+</script>
 </body>
 </html>
