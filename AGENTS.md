@@ -68,12 +68,24 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 | `/metodos` | Métodos de pago | CRUD completo |
 | `/roles` | Roles | CRUD completo |
 
+## Acceso por roles
+
+- Middleware `EnsureRole` (alias `role`): permite siempre a `admin`, `ceo`, `support`; los roles extra se pasan por argumento (`role:moderador`).
+- Rutas (todas tras `auth` + `session.timeout`):
+  - `reportes` → solo superroles + **moderador**.
+  - `cierres`, `pagos`, `trabajadores`, `metodos`, `roles` → solo superroles.
+  - `/` (dashboard) → todos (el contenido depende del rol).
+- **Dashboard** (`DashboardController`): para `moderador` muestra sus ganancias reportadas (Σ `reporte_pagos.id_moderador = yo` + Σ `pago_empleados.id_trab = yo`); para `modelo` igual pero con `id_modelo`. Superroles ven el dashboard completo.
+- Sidebar (`layouts/app.blade.php`): moderador ve Dashboard + Reportes; modelo ve solo Dashboard (y Cerrar sesión).
+- Prohibido → redirect a `/` con `withErrors('access')`.
+- Tests: `tests/Feature/RoleAccessTest.php`.
+
 ## Autenticación
 
 - Login por **email** contra `trabajador.email` (case-insensitive) en `LoginController`. Todo el sitio (menos `/login*`) está protegido con middleware `auth` (redirect a `route('login')` por defecto del framework).
 - **Primer ingreso**: si el trabajador no tiene `password`, se le pide crearla dos veces y se guarda con `Hash::make`. Si ya tiene, se valida con `Hash::check`.
 - Auth sobre el modelo `Trabajador` (implementa `Authenticatable` con el trait de Laravel); provider `users` (config/auth.php) apunta a `App\Models\Trabajador`. Columna `password` (nullable, hashed) agregada vía migración `2026_09_15_023128_add_password_to_trabajador_table`.
-- Sesión `database` con `SESSION_EXPIRE_ON_CLOSE=true` + **timeout por actividad** middleware `session.timeout`: cada pestaña abierta hace POST a `/session/keepalive` cada 2 s (JS en `layouts/app.blade.php`); si el servidor no recibe pings y `session_last_seen` supera 5 s, invalida la sesión y redirige a `/login`. Efecto: el token muere ~5 s después de cerrar la última pestaña. El email pendiente del login vive en `session('auth_email')`.
+- Sesión `database` con `SESSION_EXPIRE_ON_CLOSE=true` + **timeout por actividad** middleware `session.timeout`: cada pestaña abierta hace POST a `/session/keepalive` cada 2 s (JS en `layouts/app.blade.php`); si el servidor no recibe pings y `session_last_seen` supera 15 s, invalida la sesión y redirige a `/login`. Efecto: el token muere ~5 s después de cerrar la última pestaña. El email pendiente del login vive en `session('auth_email')`.
 - Tests: `tests/Feature/AuthFlowTest.php` (set de contraseña, login correcto/incorrecto, redirect de invitados).
 
 ## Comandos útiles

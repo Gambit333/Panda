@@ -88,13 +88,20 @@
         <div class="brand">
             <span class="dot"></span> Sistema de Nómina
         </div>
+        @php $rol = strtolower(Auth::user()->rol?->rol ?? ''); @endphp
         <a href="{{ route('dashboard') }}" class="{{ active('dashboard') }}">Dashboard</a>
-        <a href="{{ route('reportes.index') }}" class="{{ active('reportes') }}">Reportes de pago</a>
-        <a href="{{ route('cierres.index') }}" class="{{ active('cierres') }}">Cierres semanales</a>
-        <a href="{{ route('pagos.index') }}" class="{{ active('pagos') }}">Pagos a empleados</a>
-        <a href="{{ route('trabajadores.index') }}" class="{{ active('trabajadores') }}">Trabajadores</a>
-        <a href="{{ route('metodos.index') }}" class="{{ active('metodos') }}">Métodos de pago</a>
-        <a href="{{ route('roles.index') }}" class="{{ active('roles') }}">Roles</a>
+        @if (in_array($rol, ['moderador', 'modelo'], true))
+            @if ($rol === 'moderador')
+                <a href="{{ route('reportes.index') }}" class="{{ active('reportes') }}">Reportes de pago</a>
+            @endif
+        @else
+            <a href="{{ route('reportes.index') }}" class="{{ active('reportes') }}">Reportes de pago</a>
+            <a href="{{ route('cierres.index') }}" class="{{ active('cierres') }}">Cierres semanales</a>
+            <a href="{{ route('pagos.index') }}" class="{{ active('pagos') }}">Pagos a empleados</a>
+            <a href="{{ route('trabajadores.index') }}" class="{{ active('trabajadores') }}">Trabajadores</a>
+            <a href="{{ route('metodos.index') }}" class="{{ active('metodos') }}">Métodos de pago</a>
+            <a href="{{ route('roles.index') }}" class="{{ active('roles') }}">Roles</a>
+        @endif
     </aside>
     <div class="main">
         <header class="topbar">

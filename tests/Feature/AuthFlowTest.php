@@ -81,7 +81,7 @@ class AuthFlowTest extends TestCase
         $trabajador = $this->trabajadorConPassword();
         $this->actingAs($trabajador);
 
-        session(['session_last_seen' => now()->subSeconds(10)]);
+        session(['session_last_seen' => now()->subMinutes(2)]);
 
         $this->get('/')->assertRedirect('/login');
         $this->assertGuest();

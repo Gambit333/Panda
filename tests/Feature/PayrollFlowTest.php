@@ -20,10 +20,11 @@ class PayrollFlowTest extends TestCase
     {
         $rolModerador = Rol::create(['rol' => 'Moderador']);
         $rolModelo = Rol::create(['rol' => 'Modelo']);
+        $rolAdmin = Rol::create(['rol' => 'admin']);
 
         $usuario = Trabajador::create([
             'nombre' => 'Admin', 'apellido' => 'Root', 'email' => 'admin@nomina.test',
-            'id_rol' => $rolModerador->id_rol, 'password' => Hash::make('secreto123'),
+            'id_rol' => $rolAdmin->id_rol, 'password' => Hash::make('secreto123'),
         ]);
         $this->actingAs($usuario);
 

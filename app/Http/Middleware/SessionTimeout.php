@@ -14,7 +14,7 @@ class SessionTimeout
         if (Auth::check()) {
             $lastSeen = session('session_last_seen');
 
-            if ($lastSeen instanceof \DateTimeInterface && $lastSeen->lt(now()->subSeconds(15))) {
+            if ($lastSeen instanceof \DateTimeInterface && $lastSeen->lt(now()->subMinute())) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();

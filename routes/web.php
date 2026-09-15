@@ -23,10 +23,15 @@ Route::middleware(['auth', 'session.timeout'])->group(function (): void {
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::resource('reportes', ReportePagoController::class)->except(['show']);
-    Route::resource('cierres', CierreSemanalController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
-    Route::resource('pagos', PagoEmpleadoController::class)->except(['show']);
-    Route::resource('trabajadores', TrabajadorController::class)->except(['show']);
-    Route::resource('metodos', MetodoPagoController::class)->except(['show']);
-    Route::resource('roles', RolController::class)->except(['show']);
+    Route::middleware('role:moderador')->group(function (): void {
+        Route::resource('reportes', ReportePagoController::class)->except(['show']);
+    });
+
+    Route::middleware('role')->group(function (): void {
+        Route::resource('cierres', CierreSemanalController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+        Route::resource('pagos', PagoEmpleadoController::class)->except(['show']);
+        Route::resource('trabajadores', TrabajadorController::class)->except(['show']);
+        Route::resource('metodos', MetodoPagoController::class)->except(['show']);
+        Route::resource('roles', RolController::class)->except(['show']);
+    });
 });
