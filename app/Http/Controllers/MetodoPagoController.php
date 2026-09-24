@@ -54,9 +54,12 @@ class MetodoPagoController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
+            'propietario' => ['required', 'string', 'max:255'],
             'metodo_pago' => ['required', 'string', 'max:255'],
             'impuesto' => ['nullable', 'numeric', 'min:0'],
             'porcentaje_cuenta' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
     }
+
+    
 }

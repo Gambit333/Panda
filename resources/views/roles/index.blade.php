@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="flex-between mb-4">
-        <p class="muted">Roles asignables a los trabajadores (Moderador, Modelo, etc.).</p>
+        <p class="muted">Roles asignables a los trabajadores (Moderador, Modelo, Administrador, etc.).</p>
         <a href="{{ route('roles.create') }}" class="btn btn-primary">+ Nuevo rol</a>
     </div>
 
@@ -14,7 +14,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Rol</th>
-                    <th>Trabajadores</th>
+                    <th>Trabajadores asignados</th>
                     <th></th>
                 </tr>
             </thead>
@@ -22,8 +22,10 @@
                 @forelse ($roles as $rol)
                     <tr>
                         <td>#{{ $rol->id_rol }}</td>
-                        <td>{{ $rol->rol }}</td>
-                        <td>{{ $rol->trabajadores_count }}</td>
+                        <td><strong>{{ $rol->rol }}</strong></td>
+                        <td>
+                            <span class="badge">{{ $rol->trabajadores_count }} {{ Str::plural('trabajador', $rol->trabajadores_count) }}</span>
+                        </td>
                         <td>
                             <div class="actions">
                                 <a href="{{ route('roles.edit', $rol) }}" class="btn btn-secondary btn-sm">Editar</a>
@@ -41,5 +43,8 @@
                 @endforelse
             </tbody>
         </table>
+        @if (method_exists($roles, 'links'))
+            <div class="pagination">{{ $roles->links() }}</div>
+        @endif
     </div>
 @endsection

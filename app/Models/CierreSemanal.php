@@ -7,19 +7,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CierreSemanal extends Model
 {
-    public $timestamps = false;
-
     protected $table = 'cierre_semanal';
-
     protected $primaryKey = 'id_cierre';
 
-    protected $fillable = ['fecha_inicio', 'fecha_fin', 'total'];
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'fecha_inicio',
+        'fecha_fin',
+        'total_bruto',
+        'total_neto',
+    ];
 
     protected function casts(): array
     {
         return [
             'fecha_inicio' => 'date',
             'fecha_fin' => 'date',
+            'total_bruto' => 'decimal:2',
+            'total_neto' => 'decimal:2',
         ];
     }
 

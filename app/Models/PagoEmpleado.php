@@ -7,13 +7,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PagoEmpleado extends Model
 {
-    public $timestamps = false;
-
     protected $table = 'pago_empleados';
-
     protected $primaryKey = 'id_pago';
 
-    protected $fillable = ['id_trab', 'id_cierre', 'monto'];
+    public $timestamps = false;
+
+    protected $fillable = [
+        'id_trab',
+        'id_cierre',
+        'monto_bruto',
+        'monto_neto',
+        'deuda_descontada',
+        'monto_final',
+        'nota',
+    ];
+
+
+
+    protected function casts(): array
+    {
+        return [
+            'monto_bruto' => 'decimal:2',
+            'monto_neto' => 'decimal:2',
+            'deuda_descontada' => 'decimal:2',
+            'monto_final' => 'decimal:2',
+        ];
+    }
 
     public function trabajador(): BelongsTo
     {

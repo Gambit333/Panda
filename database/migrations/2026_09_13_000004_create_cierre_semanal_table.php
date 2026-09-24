@@ -12,7 +12,9 @@ return new class extends Migration
             $table->increments('id_cierre');
             $table->date('fecha_inicio');
             $table->date('fecha_fin');
-            $table->decimal('total', 12, 2)->nullable();
+            $table->decimal('total_bruto', 12, 2)->default(0.00); // Añadido
+            $table->decimal('total_neto', 12, 2)->default(0.00);  // Añadido
+            $table->timestamps();
         });
     }
 

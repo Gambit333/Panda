@@ -13,11 +13,14 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('apellido');
             $table->string('telefono')->nullable();
-            $table->string('email')->nullable();
+            $table->string('email')->unique(); // Añadido UNIQUE
+            $table->string('password');
             $table->text('direccion')->nullable();
             $table->unsignedInteger('id_rol');
+            $table->rememberToken(); // Requerido para Auth
+            $table->timestamps();
 
-            $table->foreign('id_rol')->references('id_rol')->on('roles');
+            $table->foreign('id_rol')->references('id_rol')->on('roles')->onDelete('cascade');
         });
     }
 

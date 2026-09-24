@@ -12,15 +12,53 @@ class Trabajador extends Model implements AuthenticatableContract
 {
     use Authenticatable;
 
-    public $timestamps = false;
-
     protected $table = 'trabajador';
-
     protected $primaryKey = 'id_trab';
 
-    protected $fillable = ['nombre', 'apellido', 'telefono', 'email', 'direccion', 'id_rol', 'password'];
+    // Desactiva el manejo automático de created_at y updated_at
+    public $timestamps = false;
 
-    protected $hidden = ['password'];
+    protected $fillable = [
+        'nombre',
+        'apellido',
+        'telefono',
+        'email',
+        'direccion',
+        'id_rol',
+        'password',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    public function modelosAsignadas()
+    {
+        return $this->belongsToMany(
+            Trabajador::class,
+            'modelo_moderador',
+            'id_moderador',
+            'id_modelo'
+        );
+    }
+
+    public function moderadoresAsignados()
+    {
+        return $this->belongsToMany(
+            Trabajador::class, 
+            'modelo_moderador', 
+            'id_modelo', 
+            'id_moderador'
+        );
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
 
     public function rol(): BelongsTo
     {
@@ -44,6 +82,6 @@ class Trabajador extends Model implements AuthenticatableContract
 
     public function getNombreCompletoAttribute(): string
     {
-        return trim($this->nombre.' '.$this->apellido);
+        return trim($this->nombre . ' ' . $this->apellido);
     }
 }

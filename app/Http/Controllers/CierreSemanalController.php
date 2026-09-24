@@ -33,14 +33,24 @@ class CierreSemanalController extends Controller
 
         $cierre = CierreSemanal::create($data);
 
-        $reportes = ReportePago::whereNull('id_cierre')
+        $reportes = ReportePago::with('metodoPago')
+            ->whereNull('id_cierre')
             ->whereBetween('fecha_reporte', [$data['fecha_inicio'], $data['fecha_fin']])
             ->get();
 
-        $total = $reportes->sum('precio');
+        $totalBruto = $reportes->sum('precio');
+
+        // Cálculo del neto restando la tasa/porcentaje asociado al método de pago
+        $totalNeto = $reportes->sum(function ($r) {
+            $porcentaje = $r->metodoPago?->porcentaje_cuenta ?? 0;
+            return $r->precio * (1 - ($porcentaje / 100));
+        });
 
         $cierre->reportes()->saveMany($reportes);
-        $cierre->update(['total' => $total]);
+        $cierre->update([
+            'total_bruto' => $totalBruto,
+            'total_neto' => $totalNeto,
+        ]);
 
         return redirect()
             ->route('cierres.show', $cierre)

@@ -22,14 +22,26 @@ class ReportePagoController extends Controller
         return view('reportes.index', compact('reportes'));
     }
 
-    public function create(): View
+    public function create()
     {
-        $trabajadores = Trabajador::orderBy('nombre')->get();
-        $modelos = $this->trabajadoresPorRol(['modelo', 'ceo']);
-        $metodosPago = MetodoPago::all();
-        $cierres = CierreSemanal::orderByDesc('fecha_fin')->get();
+    $usuarioActual = auth()->user();
+    
+    // Asumiendo id_rol 1 = CEO, 3 = Admin
+    $esAdmin = in_array($usuarioActual->id_rol, [1, 3]); 
 
-        return view('reportes.create', compact('trabajadores', 'modelos', 'metodosPago', 'cierres'));
+    $metodosPago = MetodoPago::all();
+    $cierres = CierreSemanal::orderByDesc('fecha_fin')->get();
+
+    if ($esAdmin) {
+        $modelos = $this->trabajadoresPorRol(['modelo']);
+        $moderadores = $this->trabajadoresPorRol(['moderador', 'chatter']);
+    } else {
+        // Moderador: Carga únicamente las modelos asignadas a él en la tabla pivote
+        $modelos = $usuarioActual->modelosAsignadas;
+        $moderadores = collect([$usuarioActual]);
+    }
+
+    return view('reportes.create', compact('modelos', 'moderadores', 'metodosPago', 'cierres', 'esAdmin', 'usuarioActual'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -43,17 +55,18 @@ class ReportePagoController extends Controller
 
     public function edit(ReportePago $reporte): View
     {
-        $trabajadores = Trabajador::orderBy('nombre')->get();
         $modelos = $this->trabajadoresPorRol(['modelo', 'ceo']);
 
-        if (! $modelos->contains('id_trab', $reporte->id_modelo)) {
+        if (! $modelos->contains('id_trab', $reporte->id_modelo) && $reporte->modelo) {
             $modelos = $modelos->concat([$reporte->modelo])->unique('id_trab');
         }
+
+        $moderadores = $this->trabajadoresPorRol(['moderador', 'chatter']);
 
         $metodosPago = MetodoPago::all();
         $cierres = CierreSemanal::orderByDesc('fecha_fin')->get();
 
-        return view('reportes.edit', compact('reporte', 'trabajadores', 'modelos', 'metodosPago', 'cierres'));
+        return view('reportes.edit', compact('reporte', 'modelos', 'moderadores', 'metodosPago', 'cierres'));
     }
 
     public function update(Request $request, ReportePago $reporte): RedirectResponse

@@ -4,24 +4,25 @@
 
 @section('content')
     @if ($modoEmpleado)
+        {{-- VISTA MODO EMPLEADO (Moderador / Modelo) --}}
         <div class="cards">
             <div class="stat">
                 <div class="label">Mis ingresos reportados</div>
-                <div class="value positive">${{ number_format($stats['reportado'], 2) }}</div>
+                <div class="value positive">${{ number_format($stats['reportado'] ?? 0, 2) }}</div>
             </div>
             <div class="stat">
-                <div class="label">Reportes hechos</div>
-                <div class="value">{{ number_format($stats['reportes']) }}</div>
+                <div class="label">Reportes realizados</div>
+                <div class="value">{{ number_format($stats['reportes'] ?? 0) }}</div>
             </div>
             <div class="stat">
                 <div class="label">Monto liquidado</div>
-                <div class="value">${{ number_format($stats['liquidado'], 2) }}</div>
+                <div class="value">${{ number_format($stats['liquidado'] ?? 0, 2) }}</div>
             </div>
         </div>
 
         <div class="card">
             <div class="flex-between mb-4">
-                <h2 style="font-size:1rem;">Mis ganancias</h2>
+                <h2 style="font-size:1rem;">Mis ganancias recientes</h2>
                 @if ($modoEmpleado === 'moderador')
                     <a href="{{ route('reportes.create') }}" class="btn btn-primary btn-sm">+ Nuevo reporte</a>
                 @endif
@@ -39,9 +40,12 @@
                     @forelse ($reportes as $reporte)
                         <tr>
                             <td>{{ $reporte->fecha_reporte?->format('d/m/Y') ?? '-' }}</td>
-                            <td>{{ $reporte->plataforma }} / {{ $reporte->user_cliente }}</td>
-                            <td>{{ Str::limit($reporte->servicio, 30) }}</td>
-                            <td class="positive">${{ number_format($reporte->precio, 2) }}</td>
+                            <td>
+                                <strong>{{ $reporte->plataforma }}</strong>
+                                <span class="muted">/ {{ $reporte->user_cliente }}</span>
+                            </td>
+                            <td>{{ Str::limit($reporte->servicio, 35) }}</td>
+                            <td class="positive"><strong>${{ number_format($reporte->precio, 2) }}</strong></td>
                         </tr>
                     @empty
                         <tr><td colspan="4" class="empty">Aún no tienes reportes registrados.</td></tr>
@@ -50,30 +54,32 @@
             </table>
         </div>
     @else
+        {{-- VISTA MODO ADMINISTRADOR --}}
         <div class="cards">
             <div class="stat">
                 <div class="label">Trabajadores</div>
-                <div class="value">{{ number_format($stats['trabajadores']) }}</div>
+                <div class="value">{{ number_format($stats['trabajadores'] ?? 0) }}</div>
             </div>
             <div class="stat">
                 <div class="label">Reportes de pago</div>
-                <div class="value">{{ number_format($stats['reportes']) }}</div>
+                <div class="value">{{ number_format($stats['reportes'] ?? 0) }}</div>
             </div>
             <div class="stat">
                 <div class="label">Ingresos totales</div>
-                <div class="value positive">${{ number_format($stats['ingresos'], 2) }}</div>
+                <div class="value positive">${{ number_format($stats['ingresos'] ?? 0, 2) }}</div>
             </div>
             <div class="stat">
                 <div class="label">Cierres semanales</div>
-                <div class="value">{{ number_format($stats['cierres']) }}</div>
+                <div class="value">{{ number_format($stats['cierres'] ?? 0) }}</div>
             </div>
             <div class="stat">
                 <div class="label">Pagos a empleados</div>
-                <div class="value">${{ number_format($stats['pagos_empleados'], 2) }}</div>
+                <div class="value">${{ number_format($stats['pagos_empleados'] ?? 0, 2) }}</div>
             </div>
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr; gap:1.5rem;">
+            {{-- Ingresos por Método de Pago --}}
             <div class="card">
                 <div class="flex-between mb-4">
                     <h2 style="font-size:1rem;">Ingresos por método de pago</h2>
@@ -81,12 +87,12 @@
                 @forelse ($ingresosPorMetodo as $item)
                     <div class="mb-4">
                         <div class="flex-between" style="font-size:.85rem;">
-                            <span>{{ $item->metodo_pago }}</span>
+                            <span><strong>{{ $item->metodo_pago }}</strong></span>
                             <strong>${{ number_format($item->total, 2) }}</strong>
                         </div>
-                        <div style="background:#e2e8f0; border-radius:999px; height:8px; margin-top:.35rem;">
+                        <div style="background:#e2e8f0; border-radius:999px; height:8px; margin-top:.35rem; overflow:hidden;">
                             @php $max = $ingresosPorMetodo->max('total') ?: 1; @endphp
-                            <div style="width: {{ $item->total / $max * 100 }}%; background:#4f46e5; height:8px; border-radius:999px;"></div>
+                            <div style="width: {{ ($item->total / $max) * 100 }}%; background:#4f46e5; height:8px; border-radius:999px;"></div>
                         </div>
                     </div>
                 @empty
@@ -94,10 +100,14 @@
                 @endforelse
             </div>
 
+            {{-- Últimos Reportes --}}
             <div class="card">
                 <div class="flex-between mb-4">
                     <h2 style="font-size:1rem;">Últimos reportes de pago</h2>
-                    <a href="{{ route('reportes.create') }}" class="btn btn-primary btn-sm">+ Nuevo reporte</a>
+                    <div class="actions">
+                        <a href="{{ route('reportes.index') }}" class="btn btn-secondary btn-sm">Ver todos</a>
+                        <a href="{{ route('reportes.create') }}" class="btn btn-primary btn-sm">+ Nuevo reporte</a>
+                    </div>
                 </div>
                 <table>
                     <thead>
@@ -113,10 +123,10 @@
                     <tbody>
                         @forelse ($ultimosReportes as $reporte)
                             <tr>
-                                <td>{{ $reporte->modelo?->nombre_completo ?? '-' }}</td>
+                                <td><strong>{{ $reporte->modelo?->nombre_completo ?? '-' }}</strong></td>
                                 <td>{{ $reporte->plataforma }} / {{ $reporte->user_cliente }}</td>
                                 <td>{{ Str::limit($reporte->servicio, 30) }}</td>
-                                <td>${{ number_format($reporte->precio, 2) }}</td>
+                                <td class="positive"><strong>${{ number_format($reporte->precio, 2) }}</strong></td>
                                 <td>{{ $reporte->fecha_reporte?->format('d/m/Y') ?? '-' }}</td>
                                 <td>{{ $reporte->moderador?->nombre_completo ?? '-' }}</td>
                             </tr>
@@ -127,10 +137,14 @@
                 </table>
             </div>
 
+            {{-- Últimos Cierres --}}
             <div class="card">
                 <div class="flex-between mb-4">
                     <h2 style="font-size:1rem;">Últimos cierres semanales</h2>
-                    <a href="{{ route('cierres.create') }}" class="btn btn-primary btn-sm">+ Nuevo cierre</a>
+                    <div class="actions">
+                        <a href="{{ route('cierres.index') }}" class="btn btn-secondary btn-sm">Ver todos</a>
+                        <a href="{{ route('cierres.create') }}" class="btn btn-primary btn-sm">+ Nuevo cierre</a>
+                    </div>
                 </div>
                 <table>
                     <thead>
@@ -143,9 +157,13 @@
                     <tbody>
                         @forelse ($ultimosCierres as $cierre)
                             <tr>
-                                <td>{{ $cierre->fecha_inicio->format('d/m/Y') }} — {{ $cierre->fecha_fin->format('d/m/Y') }}</td>
-                                <td>{{ $cierre->reportes_count }}</td>
-                                <td class="positive">${{ number_format($cierre->total ?? 0, 2) }}</td>
+                                <td>
+                                    <strong>
+                                        {{ $cierre->fecha_inicio?->format('d/m/Y') ?? '-' }} — {{ $cierre->fecha_fin?->format('d/m/Y') ?? '-' }}
+                                    </strong>
+                                </td>
+                                <td><span class="badge">{{ $cierre->reportes_count }} reportes</span></td>
+                                <td class="positive"><strong>${{ number_format($cierre->total ?? 0, 2) }}</strong></td>
                             </tr>
                         @empty
                             <tr><td colspan="3" class="empty">No hay cierres registrados.</td></tr>

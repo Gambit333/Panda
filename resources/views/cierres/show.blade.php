@@ -22,12 +22,16 @@
             <div class="value">{{ $cierre->reportes->count() }}</div>
         </div>
         <div class="stat">
-            <div class="label">Total del cierre</div>
-            <div class="value positive">${{ number_format($cierre->total ?? 0, 2) }}</div>
+            <div class="label">Total Bruto</div>
+            <div class="value positive">${{ number_format($cierre->total_bruto ?? 0, 2) }}</div>
+        </div>
+        <div class="stat">
+            <div class="label">Total Neto (Sin comisiones)</div>
+            <div class="value positive" style="font-weight:bold;">${{ number_format($cierre->total_neto ?? 0, 2) }}</div>
         </div>
         <div class="stat">
             <div class="label">Total pagado a empleados</div>
-            <div class="value">${{ number_format($cierre->pagosEmpleados->sum('monto'), 2) }}</div>
+            <div class="value">${{ number_format($cierre->pagosEmpleados->sum('monto_final'), 2) }}</div>
         </div>
     </div>
 
@@ -38,7 +42,7 @@
                 <tr>
                     <th>Modelo</th>
                     <th>Plataforma / Cliente</th>
-                    <th>Método</th>
+                    <th>Método / Cuenta</th>
                     <th>Servicio</th>
                     <th>Precio</th>
                     <th>Moderador</th>
@@ -49,7 +53,12 @@
                     <tr>
                         <td>{{ $reporte->modelo?->nombre_completo ?? '-' }}</td>
                         <td>{{ $reporte->plataforma }} / {{ $reporte->user_cliente }}</td>
-                        <td>{{ $reporte->metodoPago?->metodo_pago ?? '-' }}</td>
+                        <td>
+                            {{ $reporte->metodoPago?->metodo_pago ?? '-' }}
+                            @if($reporte->metodoPago?->propietario)
+                                <small class="muted">({{ $reporte->metodoPago->propietario }})</small>
+                            @endif
+                        </td>
                         <td>{{ Str::limit($reporte->servicio, 25) }}</td>
                         <td class="positive">${{ number_format($reporte->precio, 2) }}</td>
                         <td>{{ $reporte->moderador?->nombre_completo ?? '-' }}</td>
@@ -67,7 +76,11 @@
             <thead>
                 <tr>
                     <th>Empleado</th>
-                    <th>Monto</th>
+                    <th>Monto Bruto</th>
+                    <th>Monto Neto</th>
+                    <th>Deuda</th>
+                    <th>Monto Final</th>
+                    <th>Nota</th>
                     <th></th>
                 </tr>
             </thead>
@@ -75,7 +88,11 @@
                 @forelse ($cierre->pagosEmpleados as $pago)
                     <tr>
                         <td>{{ $pago->trabajador?->nombre_completo ?? '-' }}</td>
-                        <td class="positive">${{ number_format($pago->monto, 2) }}</td>
+                        <td>${{ number_format($pago->monto_bruto, 2) }}</td>
+                        <td>${{ number_format($pago->monto_neto, 2) }}</td>
+                        <td class="text-danger">-${{ number_format($pago->deuda, 2) }}</td>
+                        <td class="positive" style="font-weight:bold;">${{ number_format($pago->monto_final, 2) }}</td>
+                        <td><small class="muted">{{ $pago->nota ?? '-' }}</small></td>
                         <td>
                             <div class="actions">
                                 <a href="{{ route('pagos.edit', $pago) }}" class="btn btn-secondary btn-sm">Editar</a>
@@ -83,7 +100,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="3" class="empty">Aún no se registran pagos para este cierre.</td></tr>
+                    <tr><td colspan="7" class="empty">Aún no se registran pagos para este cierre.</td></tr>
                 @endforelse
             </tbody>
         </table>

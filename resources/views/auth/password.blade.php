@@ -1,40 +1,98 @@
-@extends('layouts.auth')
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ $createsPassword ? 'Crear contraseña' : 'Contraseña' }} - Panda Multiverse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#09090b] text-zinc-100 font-sans min-h-screen flex items-center justify-center p-4 selection:bg-purple-500 selection:text-white">
 
-@section('title', $createsPassword ? 'Crear contraseña' : 'Contraseña')
+    <!-- Luces de fondo (Glow) -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-purple-900/30 rounded-full blur-[128px]"></div>
+        <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-950/40 rounded-full blur-[128px]"></div>
+    </div>
 
-@section('content')
-    @if ($createsPassword)
-        <h1>Bienvenido, {{ $trabajador->nombre }}</h1>
-        <p class="hint">Tu cuenta no tiene contraseña todavía. Crea una para poder iniciar sesión.</p>
-    @else
-        <h1>Hola, {{ $trabajador->nombre }}</h1>
-        <p class="hint">Ingresa la contraseña de tu cuenta.</p>
-    @endif
+    <!-- Tarjeta Centrada -->
+    <div class="w-full max-w-md bg-zinc-900/80 border border-purple-900/30 backdrop-blur-xl rounded-3xl p-8 shadow-2xl shadow-purple-950/40 relative z-10">
+        
+        <!-- Encabezado dinámico según $createsPassword -->
+        <div class="flex flex-col items-center mb-6 text-center">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-950 to-zinc-800 border border-purple-500/40 flex items-center justify-center mb-3 shadow-lg shadow-purple-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+            </div>
 
-    @if ($errors->has('password'))
-        <div class="alert-danger">{{ $errors->first('password') }}</div>
-    @endif
-
-    <form method="POST" action="{{ route('login.password.submit') }}">
-        @csrf
-        <div class="form-group">
-            <label for="password">{{ $createsPassword ? 'Nueva contraseña' : 'Contraseña' }}</label>
-            <input type="password" id="password" name="password" required autofocus @if ($createsPassword) autocomplete="new-password" @else autocomplete="current-password" @endif>
             @if ($createsPassword)
-                <div class="text-danger" style="color: var(--muted)">Mínimo 6 caracteres.</div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">Bienvenido, {{ $trabajador->nombre }}</h1>
+                <p class="text-xs text-zinc-400 mt-1">Tu cuenta no tiene contraseña todavía. Crea una para poder iniciar sesión.</p>
+            @else
+                <h1 class="text-2xl font-bold tracking-tight text-white">Hola, {{ $trabajador->nombre }}</h1>
+                <p class="text-xs text-zinc-400 mt-1">Ingresa la contraseña de tu cuenta.</p>
             @endif
         </div>
 
-        @if ($createsPassword)
-            <div class="form-group">
-                <label for="password_confirmation">Repite la contraseña</label>
-                <input type="password" id="password_confirmation" name="password_confirmation" required autocomplete="new-password">
-                @error('password') <div class="text-danger">{{ $message }}</div> @enderror
+        <form method="POST" action="{{ route('login.password.submit') }}" class="space-y-4">
+            @csrf
+
+            <!-- Campo Contraseña -->
+            <div>
+                <label for="password" class="block text-xs font-medium text-zinc-300 mb-1.5">
+                    {{ $createsPassword ? 'Nueva contraseña' : 'Contraseña' }}
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                        </svg>
+                    </span>
+                    <input type="password" id="password" name="password" required autofocus
+                        @if ($createsPassword) autocomplete="new-password" @else autocomplete="current-password" @endif
+                        placeholder="••••••••"
+                        class="w-full pl-12 pr-4 py-3 bg-zinc-950/60 border border-purple-900/40 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm">
+                </div>
+                
+                @if ($createsPassword)
+                    <p class="text-[11px] text-zinc-500 mt-1 pl-1">Mínimo 6 caracteres.</p>
+                @endif
+
+                @error('password')
+                    <p class="text-rose-400 text-xs mt-1.5 pl-1">{{ $message }}</p>
+                @enderror
             </div>
-        @endif
 
-        <button type="submit" class="btn">{{ $createsPassword ? 'Crear contraseña e ingresar' : 'Ingresar' }}</button>
-    </form>
+            <!-- Campo Confirmar Contraseña (si se está creando contraseña) -->
+            @if ($createsPassword)
+                <div>
+                    <label for="password_confirmation" class="block text-xs font-medium text-zinc-300 mb-1.5">Repite la contraseña</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                        </span>
+                        <input type="password" id="password_confirmation" name="password_confirmation" required autocomplete="new-password" placeholder="Repite tu contraseña"
+                            class="w-full pl-12 pr-4 py-3 bg-zinc-950/60 border border-purple-900/40 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm">
+                    </div>
+                </div>
+            @endif
 
-    <a href="{{ route('login') }}" class="back-link">← Volver a ingresar otro email</a>
-@endsection
+            <button type="submit"
+                class="w-full py-3.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm rounded-xl transition-all duration-200 shadow-lg shadow-purple-950/50 hover:shadow-purple-600/30 active:scale-[0.99] mt-2">
+                {{ $createsPassword ? 'Crear contraseña e ingresar' : 'Ingresar' }}
+            </button>
+        </form>
+
+        <!-- Botón de regreso -->
+        <div class="mt-6 text-center">
+            <a href="{{ route('login') }}" class="text-xs text-zinc-500 hover:text-purple-400 transition-colors inline-flex items-center gap-1">
+                ← Volver a ingresar otro email
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>

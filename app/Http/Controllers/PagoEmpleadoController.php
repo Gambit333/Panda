@@ -66,7 +66,11 @@ class PagoEmpleadoController extends Controller
         return $request->validate([
             'id_trab' => ['required', 'integer', 'exists:trabajador,id_trab'],
             'id_cierre' => ['required', 'integer', 'exists:cierre_semanal,id_cierre'],
-            'monto' => ['required', 'numeric', 'min:0'],
+            'monto_bruto' => ['required', 'numeric', 'min:0'],
+            'monto_neto' => ['required', 'numeric', 'min:0'],
+            'deuda' => ['nullable', 'numeric', 'min:0'],
+            'monto_final' => ['required', 'numeric', 'min:0'],
+            'nota' => ['nullable', 'string', 'max:255'],
         ]);
     }
 }

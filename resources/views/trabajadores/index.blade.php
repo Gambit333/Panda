@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="flex-between mb-4">
-        <p class="muted">Empleados del sistema, con su rol asignado.</p>
+        <p class="muted">Empleados registrados en el sistema y sus roles asignados.</p>
         <a href="{{ route('trabajadores.create') }}" class="btn btn-primary">+ Nuevo trabajador</a>
     </div>
 
@@ -13,11 +13,10 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Apellido</th>
+                    <th>Nombre completo</th>
+                    <th>Rol</th>
                     <th>Teléfono</th>
                     <th>Email</th>
-                    <th>Rol</th>
                     <th></th>
                 </tr>
             </thead>
@@ -25,11 +24,22 @@
                 @forelse ($trabajadores as $trabajador)
                     <tr>
                         <td>#{{ $trabajador->id_trab }}</td>
-                        <td>{{ $trabajador->nombre }}</td>
-                        <td>{{ $trabajador->apellido }}</td>
-                        <td>{{ $trabajador->telefono ?? '-' }}</td>
-                        <td>{{ $trabajador->email ?? '-' }}</td>
-                        <td><span class="badge">{{ $trabajador->rol?->rol ?? '-' }}</span></td>
+                        <td><strong>{{ $trabajador->nombre }} {{ $trabajador->apellido }}</strong></td>
+                        <td><span class="badge">{{ $trabajador->rol?->rol ?? 'Sin Rol' }}</span></td>
+                        <td>
+                            @if ($trabajador->telefono)
+                                <a href="tel:{{ $trabajador->telefono }}">{{ $trabajador->telefono }}</a>
+                            @else
+                                <span class="muted">-</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if ($trabajador->email)
+                                <a href="mailto:{{ $trabajador->email }}">{{ $trabajador->email }}</a>
+                            @else
+                                <span class="muted">-</span>
+                            @endif
+                        </td>
                         <td>
                             <div class="actions">
                                 <a href="{{ route('trabajadores.edit', $trabajador) }}" class="btn btn-secondary btn-sm">Editar</a>
@@ -43,7 +53,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="empty">No hay trabajadores registrados.</td></tr>
+                    <tr><td colspan="6" class="empty">No hay trabajadores registrados.</td></tr>
                 @endforelse
             </tbody>
         </table>

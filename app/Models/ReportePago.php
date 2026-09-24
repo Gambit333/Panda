@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReportePago extends Model
 {
-    public $timestamps = false;
-
     protected $table = 'reporte_pagos';
-
     protected $primaryKey = 'id_reporte';
+
+    public $timestamps = false;
 
     protected $fillable = [
         'id_modelo',
@@ -20,6 +19,7 @@ class ReportePago extends Model
         'id_mp',
         'precio',
         'servicio',
+        'addon_extra',
         'duracion',
         'fecha_reporte',
         'id_moderador',
@@ -31,6 +31,8 @@ class ReportePago extends Model
     {
         return [
             'fecha_reporte' => 'date',
+            'precio' => 'decimal:2',
+            'addon_extra' => 'decimal:2',
         ];
     }
 

@@ -7,13 +7,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MetodoPago extends Model
 {
-    public $timestamps = false;
-
     protected $table = 'metodos_pago';
-
     protected $primaryKey = 'id_mp';
 
-    protected $fillable = ['metodo_pago', 'impuesto', 'porcentaje_cuenta'];
+    public $timestamps = false;
+
+    protected $fillable = [
+        'propietario',
+        'metodo_pago',
+        'impuesto',
+        'porcentaje_cuenta',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'impuesto' => 'decimal:2',
+            'porcentaje_cuenta' => 'decimal:2',
+        ];
+    }
 
     public function reportes(): HasMany
     {

@@ -25,13 +25,17 @@ class DashboardController extends Controller
             'reportes' => ReportePago::count(),
             'ingresos' => ReportePago::sum('precio'),
             'cierres' => CierreSemanal::count(),
-            'pagos_empleados' => PagoEmpleado::sum('monto'),
+            'pagos_empleados' => PagoEmpleado::sum('monto_final'),
         ];
 
         $ingresosPorMetodo = DB::table('reporte_pagos')
             ->join('metodos_pago', 'reporte_pagos.id_mp', '=', 'metodos_pago.id_mp')
-            ->select('metodos_pago.metodo_pago', DB::raw('SUM(reporte_pagos.precio) as total'))
-            ->groupBy('metodos_pago.metodo_pago')
+            ->select(
+                'metodos_pago.propietario',
+                'metodos_pago.metodo_pago',
+                DB::raw('SUM(reporte_pagos.precio) as total')
+            )
+            ->groupBy('metodos_pago.propietario', 'metodos_pago.metodo_pago')
             ->orderByDesc('total')
             ->get();
 
@@ -62,7 +66,7 @@ class DashboardController extends Controller
         $stats = [
             'reportado' => $reportes->sum('precio'),
             'reportes' => $reportes->count(),
-            'liquidado' => PagoEmpleado::where('id_trab', $user->id_trab)->sum('monto'),
+            'liquidado' => PagoEmpleado::where('id_trab', $user->id_trab)->sum('monto_final'),
         ];
 
         return view('dashboard', [

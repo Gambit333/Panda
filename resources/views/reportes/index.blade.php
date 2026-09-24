@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="flex-between mb-4">
-        <p class="muted">Registros de pagos recibidos por plataforma y cliente.</p>
+        <p class="muted">Registros de pagos recibidos por plataforma, cliente y moderador asignado.</p>
         <a href="{{ route('reportes.create') }}" class="btn btn-primary">+ Nuevo reporte</a>
     </div>
 
@@ -15,7 +15,7 @@
                     <th>Modelo</th>
                     <th>Plataforma</th>
                     <th>Cliente</th>
-                    <th>Método</th>
+                    <th>Método / Titular</th>
                     <th>Precio</th>
                     <th>Servicio</th>
                     <th>Fecha</th>
@@ -27,12 +27,26 @@
             <tbody>
                 @forelse ($reportes as $reporte)
                     <tr>
-                        <td>{{ $reporte->modelo?->nombre_completo ?? '-' }}</td>
+                        <td><strong>{{ $reporte->modelo?->nombre_completo ?? '-' }}</strong></td>
                         <td>{{ $reporte->plataforma }}</td>
-                        <td>{{ $reporte->user_cliente }}</td>
-                        <td>{{ $reporte->metodoPago?->metodo_pago ?? '-' }}</td>
-                        <td class="positive">${{ number_format($reporte->precio, 2) }}</td>
-                        <td>{{ Str::limit($reporte->servicio, 25) }}</td>
+                        <td><code>{{ $reporte->user_cliente }}</code></td>
+                        <td>
+                            @if ($reporte->metodoPago)
+                                {{ $reporte->metodoPago->metodo_pago }}
+                                @if ($reporte->metodoPago->propietario)
+                                    <br><small class="muted">({{ $reporte->metodoPago->propietario }})</small>
+                                @endif
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td class="positive" style="font-weight: bold;">${{ number_format($reporte->precio, 2) }}</td>
+                        <td>
+                            {{ Str::limit($reporte->servicio, 25) }}
+                            @if ($reporte->duracion)
+                                <br><small class="muted">{{ $reporte->duracion }}</small>
+                            @endif
+                        </td>
                         <td>{{ $reporte->fecha_reporte?->format('d/m/Y') ?? '-' }}</td>
                         <td>{{ $reporte->moderador?->nombre_completo ?? '-' }}</td>
                         <td>

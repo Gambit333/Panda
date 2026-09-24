@@ -7,11 +7,11 @@
 
     <div class="form-group">
         <label>Nombre del rol *</label>
-        <input type="text" name="rol" value="{{ old('rol', $rol?->rol) }}" required>
+        <input type="text" name="rol" value="{{ old('rol', $rol?->rol) }}" placeholder="Ej. Moderador, Modelo, Administrador" required>
         @error('rol') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 
-    <div class="flex-between">
+    <div class="flex-between mt-4">
         <a href="{{ route('roles.index') }}" class="btn btn-secondary">Cancelar</a>
         <button type="submit" class="btn btn-primary">{{ $rol ? 'Actualizar' : 'Guardar' }}</button>
     </div>

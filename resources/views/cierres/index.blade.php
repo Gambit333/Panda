@@ -17,7 +17,8 @@
                     <th>Fecha fin</th>
                     <th>Reportes</th>
                     <th>Pagos empleados</th>
-                    <th>Total</th>
+                    <th>Total Bruto</th>
+                    <th>Total Neto</th>
                     <th></th>
                 </tr>
             </thead>
@@ -29,7 +30,8 @@
                         <td>{{ $cierre->fecha_fin->format('d/m/Y') }}</td>
                         <td>{{ $cierre->reportes_count }}</td>
                         <td>{{ $cierre->pagos_empleados_count }}</td>
-                        <td class="positive">${{ number_format($cierre->total ?? 0, 2) }}</td>
+                        <td class="positive">${{ number_format($cierre->total_bruto ?? 0, 2) }}</td>
+                        <td class="positive" style="font-weight: bold;">${{ number_format($cierre->total_neto ?? 0, 2) }}</td>
                         <td>
                             <div class="actions">
                                 <a href="{{ route('cierres.show', $cierre) }}" class="btn btn-secondary btn-sm">Ver</a>
@@ -43,7 +45,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="empty">No hay cierres registrados.</td></tr>
+                    <tr><td colspan="8" class="empty">No hay cierres registrados.</td></tr>
                 @endforelse
             </tbody>
         </table>
