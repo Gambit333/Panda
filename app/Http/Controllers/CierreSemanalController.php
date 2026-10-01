@@ -99,6 +99,8 @@ class CierreSemanalController extends Controller
                 'id_trab' => $fila['id_trab'],
                 'concepto' => $fila['concepto'],
                 'monto' => $fila['monto'],
+                'total_antes_impuestos' => $fila['total_antes'] ?? 0,
+                'total_despues_impuestos' => $fila['total_despues'] ?? 0,
                 'nota' => $fila['nota'],
             ]);
         }

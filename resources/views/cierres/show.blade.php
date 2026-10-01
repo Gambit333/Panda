@@ -97,6 +97,8 @@
                 <thead>
                     <tr>
                         <th>Trabajador</th>
+                        <th>Total antes de impuestos</th>
+                        <th>Total después de impuestos</th>
                         <th>Concepto</th>
                         <th>Detalle</th>
                         <th>Monto</th>
@@ -106,6 +108,8 @@
                     @foreach ($pagos as $detalle)
                         <tr>
                             <td><strong>{{ $detalle->trabajador?->nombre_completo ?? 'Sin asignar' }}</strong></td>
+                            <td>${{ number_format($detalle->total_antes_impuestos ?? 0, 2) }}</td>
+                            <td>${{ number_format($detalle->total_despues_impuestos ?? 0, 2) }}</td>
                             <td>{{ $conceptos[$detalle->concepto] ?? $detalle->concepto }}</td>
                             <td><small class="muted">{{ $detalle->nota }}</small></td>
                             <td class="positive" style="font-weight:bold;">${{ number_format($detalle->monto, 2) }}</td>

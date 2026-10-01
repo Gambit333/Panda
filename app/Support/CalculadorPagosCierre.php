@@ -53,7 +53,7 @@ class CalculadorPagosCierre
     ];
 
     /**
-     * @return array<int, array{id_trab:int, concepto:string, monto:float, nota:string}>
+     * @return array<int, array{id_trab:int, concepto:string, monto:float, nota:string, total_antes:float, total_despues:float}>
      */
     public function calcular(CierreSemanal $cierre): array
     {
@@ -63,22 +63,55 @@ class CalculadorPagosCierre
 
         $filas = [];
         $fondoAdmin = 0.0;
+        $antes = [];
+        $despues = [];
+        $baseModelos = [];
+        $baseModeradores = [];
+        $baseModeradoresCeo = [];
 
         foreach ($cierre->reportes as $reporte) {
-            $base = $this->baseNeta($reporte);
-            if ($base <= 0) {
+            $antesReporte = round((float) $reporte->precio, 2);
+            $despuesReporte = $this->baseConImpuestos($reporte);
+
+            if ($despuesReporte <= 0) {
                 continue;
             }
 
-            if ($ceo && (int) $reporte->id_modelo === (int) $ceo->id_trab) {
-                $this->sumar($filas, $ceo->id_trab, 'modelo', $base * self::BREA_MODELO, '75% de sus ganancias como modelo');
-                $this->sumar($filas, $reporte->id_moderador, 'moderador', $base * self::BREA_MODERADOR, '18% de las ganancias de la CEO');
-                $this->sumar($filas, $pinto?->id_trab, 'pinto', $base * self::BREA_PINTO, '7% de las ganancias de la CEO');
-            } else {
-                $this->sumar($filas, $reporte->id_modelo, 'modelo', $base * self::MODELO, '50% de sus ganancias como modelo');
-                $this->sumar($filas, $reporte->id_moderador, 'moderador', $base * self::MODERADOR, '20% como moderador');
-                $fondoAdmin += $base * self::ADMIN;
+            // Totales por trabajador: total de ventas (antes de impuestos) y el número
+            // final que entrega el cálculo de comisiones por cuenta (después de impuestos).
+            foreach (array_unique([(int) $reporte->id_modelo, (int) $reporte->id_moderador]) as $idParticipa) {
+                $antes[$idParticipa] = round(($antes[$idParticipa] ?? 0) + $antesReporte, 2);
+                $despues[$idParticipa] = round(($despues[$idParticipa] ?? 0) + $despuesReporte, 2);
             }
+
+            $idModelo = (int) $reporte->id_modelo;
+            $idModerador = (int) $reporte->id_moderador;
+            $baseModelos[$idModelo] = round(($baseModelos[$idModelo] ?? 0) + $despuesReporte, 2);
+
+            if ($ceo && $idModelo === (int) $ceo->id_trab) {
+                $baseModeradoresCeo[$idModerador] = round(($baseModeradoresCeo[$idModerador] ?? 0) + $despuesReporte, 2);
+            } else {
+                $baseModeradores[$idModerador] = round(($baseModeradores[$idModerador] ?? 0) + $despuesReporte, 2);
+            }
+        }
+
+        // Los porcentajes se aplican sobre el número final ya agregado de cada trabajador.
+        foreach ($baseModelos as $idModelo => $total) {
+            if ($ceo && $idModelo === (int) $ceo->id_trab) {
+                $this->sumar($filas, $idModelo, 'modelo', $total * self::BREA_MODELO, '75% de sus ganancias como modelo');
+                $this->sumar($filas, $pinto?->id_trab, 'pinto', $total * self::BREA_PINTO, '7% de las ganancias de la CEO');
+            } else {
+                $this->sumar($filas, $idModelo, 'modelo', $total * self::MODELO, '50% de sus ganancias como modelo');
+                $fondoAdmin += $total * self::ADMIN;
+            }
+        }
+
+        foreach ($baseModeradores as $idModerador => $total) {
+            $this->sumar($filas, $idModerador, 'moderador', $total * self::MODERADOR, '20% como moderador');
+        }
+
+        foreach ($baseModeradoresCeo as $idModerador => $total) {
+            $this->sumar($filas, $idModerador, 'moderador', $total * self::BREA_MODERADOR, '18% de las ganancias de la CEO');
         }
 
         $fondoAdmin = round($fondoAdmin, 2);
@@ -91,22 +124,29 @@ class CalculadorPagosCierre
             }
         }
 
+        // Cada fila del trabajador lleva sus totales informativos (antes y después del 15%).
+        foreach ($filas as $key => $fila) {
+            $filas[$key]['total_antes'] = round($antes[$fila['id_trab']] ?? 0, 2);
+            $filas[$key]['total_despues'] = round($despues[$fila['id_trab']] ?? 0, 2);
+        }
+
         return array_values($filas);
     }
 
     /**
-     * Precio del reporte menos la comisión del método de pago, y luego menos el 15%.
+     * Número final para los pagos: precio de venta − 15% de impuestos.
+     * La comisión del método de pago ya se calcula aparte en la tarjeta de
+     * comisiones por cuenta, por eso no se resta aquí.
      */
-    private function baseNeta(ReportePago $reporte): float
+    private function baseConImpuestos(ReportePago $reporte): float
     {
-        $porcentaje = (float) ($reporte->metodoPago?->porcentaje_cuenta ?? 0);
-        $neto = round((float) $reporte->precio * (1 - ($porcentaje / 100)), 2);
+        $precio = round((float) $reporte->precio, 2);
 
-        return round($neto * (1 - self::CORTE_IMPUESTO), 2);
+        return round($precio * (1 - self::CORTE_IMPUESTO), 2);
     }
 
     /**
-     * @param  array<string, array{id_trab:int, concepto:string, monto:float, nota:string}>  $filas
+     * @param  array<string, array{id_trab:int, concepto:string, monto:float, nota:string, total_antes?:float, total_despues?:float}>  $filas
      */
     private function sumar(array &$filas, ?int $idTrab, string $concepto, float $monto, string $nota): void
     {

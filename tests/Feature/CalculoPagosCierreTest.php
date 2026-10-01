@@ -36,16 +36,16 @@ class CalculoPagosCierreTest extends TestCase
 
         $metodo = MetodoPago::create(['propietario' => 'Equipo', 'metodo_pago' => 'PayPal', 'porcentaje_cuenta' => 10]);
 
-        // Modelo normal: neto 90 (100 - 10%), base = 90 * 0.85 = 76.5
-        //   modelo 50% = 38.25 | moderador 20% = 15.30 | admin 30% = 22.95
+        // Modelo normal: total de ventas 100, número final 100 - 15% = 85 (la comisión ya se calculó aparte)
+        //   modelo 50% = 42.50 | moderador 20% = 17.00 | admin 30% = 25.50
         $this->post('/reportes', [
             'id_modelo' => $modelo->id_trab, 'plataforma' => 'OnlyFans', 'user_cliente' => 'cli1',
             'id_mp' => $metodo->id_mp, 'precio' => 100, 'servicio' => 'Video',
             'fecha_reporte' => '2026-09-10', 'id_moderador' => $moderador->id_trab,
         ])->assertSessionHasNoErrors();
 
-        // Maria Brea como modelo: neto 180 (200 - 10%), base = 180 * 0.85 = 153
-        //   Brea 75% = 114.75 | moderador 18% = 27.54 | Pinto 7% = 10.71
+        // Maria Brea como modelo: total de ventas 200, número final 200 - 15% = 170
+        //   Brea 75% = 127.50 | moderador 18% = 30.60 | Pinto 7% = 11.90
         $this->post('/reportes', [
             'id_modelo' => $brea->id_trab, 'plataforma' => 'OnlyFans', 'user_cliente' => 'cli2',
             'id_mp' => $metodo->id_mp, 'precio' => 200, 'servicio' => 'Chat',
@@ -57,28 +57,50 @@ class CalculoPagosCierreTest extends TestCase
 
         $cierre = CierreSemanal::firstOrFail();
 
-        // Fondo administrativo = 30% de la base de la modelo normal = 22.95
-        //   ceo 20% = 4.59 | Pinto 7% = 1.61 | cada admin 1.5% = 0.34
+        // Fondo administrativo = 30% del número final de la modelo normal = 25.50
+        //   ceo 20% = 5.10 | Pinto 7% = 1.79 | cada admin 1.5% = 0.38
         $this->assertEquals(9, DetallePagoCierre::count());
 
         $monto = fn (int $idTrab, string $concepto) => DetallePagoCierre::where('id_cierre', $cierre->id_cierre)
             ->where('id_trab', $idTrab)->where('concepto', $concepto)->value('monto');
 
-        $this->assertEquals(38.25, $monto($modelo->id_trab, 'modelo'));
-        $this->assertEquals(114.75, $monto($brea->id_trab, 'modelo'));
-        $this->assertEquals(10.71, $monto($pinto->id_trab, 'pinto'));
-        $this->assertEquals(4.59, $monto($brea->id_trab, 'admin'));
-        $this->assertEquals(1.61, $monto($pinto->id_trab, 'admin'));
-        $this->assertEquals(0.34, $monto($juanH->id_trab, 'admin'));
-        $this->assertEquals(0.34, $monto($juanB->id_trab, 'admin'));
-        $this->assertEquals(0.34, $monto($root->id_trab, 'admin'));
+        $this->assertEquals(42.50, $monto($modelo->id_trab, 'modelo'));
+        $this->assertEquals(127.50, $monto($brea->id_trab, 'modelo'));
+        $this->assertEquals(11.90, $monto($pinto->id_trab, 'pinto'));
+        $this->assertEquals(5.10, $monto($brea->id_trab, 'admin'));
+        $this->assertEquals(1.79, $monto($pinto->id_trab, 'admin'));
+        $this->assertEquals(0.38, $monto($juanH->id_trab, 'admin'));
+        $this->assertEquals(0.38, $monto($juanB->id_trab, 'admin'));
+        $this->assertEquals(0.38, $monto($root->id_trab, 'admin'));
 
-        // Ana es moderadora en ambos reportes: 20% de Lucia (15.30) + 18% de Brea (27.54)
-        $this->assertEquals(42.84, $monto($moderador->id_trab, 'moderador'));
+        // Ana es moderadora en ambos reportes: 20% de Lucia (17.00) + 18% de Brea (30.60)
+        $this->assertEquals(47.60, $monto($moderador->id_trab, 'moderador'));
+
+        // Totales por trabajador: total de ventas antes de impuestos (solo informativo)
+        // y el número final con el 15% de impuestos (después de impuestos).
+        $totales = fn (int $idTrab) => DetallePagoCierre::where('id_cierre', $cierre->id_cierre)
+            ->where('id_trab', $idTrab)
+            ->first(['total_antes_impuestos', 'total_despues_impuestos']);
+
+        $this->assertEquals('100.00', $totales($modelo->id_trab)->total_antes_impuestos);
+        $this->assertEquals('85.00', $totales($modelo->id_trab)->total_despues_impuestos);
+
+        $this->assertEquals('200.00', $totales($brea->id_trab)->total_antes_impuestos);
+        $this->assertEquals('170.00', $totales($brea->id_trab)->total_despues_impuestos);
+
+        // Moderadora de los dos reportes: 100 + 200 antes, 85 + 170 después.
+        $this->assertEquals('300.00', $totales($moderador->id_trab)->total_antes_impuestos);
+        $this->assertEquals('255.00', $totales($moderador->id_trab)->total_despues_impuestos);
+
+        // Solo cobra del fondo administrativo: no tiene reportes propios.
+        $this->assertEquals('0.00', $totales($juanH->id_trab)->total_antes_impuestos);
+        $this->assertEquals('0.00', $totales($juanH->id_trab)->total_despues_impuestos);
 
         $response = $this->get("/cierres/{$cierre->id_cierre}")->assertOk();
         $response
             ->assertSee('Pagos calculados')
+            ->assertSee('Total antes de impuestos')
+            ->assertSee('Total después de impuestos')
             ->assertSee('Maria Brea')
             ->assertSee('Maria Pinto')
             ->assertSee('TOTAL A PAGAR');

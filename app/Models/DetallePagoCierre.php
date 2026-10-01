@@ -16,6 +16,8 @@ class DetallePagoCierre extends Model
         'id_trab',
         'concepto',
         'monto',
+        'total_antes_impuestos',
+        'total_despues_impuestos',
         'nota',
     ];
 
@@ -23,6 +25,8 @@ class DetallePagoCierre extends Model
     {
         return [
             'monto' => 'decimal:2',
+            'total_antes_impuestos' => 'decimal:2',
+            'total_despues_impuestos' => 'decimal:2',
         ];
     }
 
