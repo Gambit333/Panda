@@ -13,6 +13,7 @@ class Trabajador extends Model implements AuthenticatableContract
     use Authenticatable;
 
     protected $table = 'trabajador';
+
     protected $primaryKey = 'id_trab';
 
     // Desactiva el manejo automático de created_at y updated_at
@@ -46,9 +47,9 @@ class Trabajador extends Model implements AuthenticatableContract
     public function moderadoresAsignados()
     {
         return $this->belongsToMany(
-            Trabajador::class, 
-            'modelo_moderador', 
-            'id_modelo', 
+            Trabajador::class,
+            'modelo_moderador',
+            'id_modelo',
             'id_moderador'
         );
     }
@@ -82,6 +83,6 @@ class Trabajador extends Model implements AuthenticatableContract
 
     public function getNombreCompletoAttribute(): string
     {
-        return trim($this->nombre . ' ' . $this->apellido);
+        return trim($this->nombre.' '.$this->apellido);
     }
 }

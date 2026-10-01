@@ -60,6 +60,4 @@ class MetodoPagoController extends Controller
             'porcentaje_cuenta' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
     }
-
-    
 }

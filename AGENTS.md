@@ -8,7 +8,7 @@ Sistema de nómina para reportar pagos recibidos por plataformas (OnlyFans, etc.
 
 - PHP 8.2 / Composer
 - Laravel 12.69
-- Blade (sin build de frontend; CSS embebido en `resources/views/layouts/app.blade.php`)
+- Blade (sin build de frontend; estilos en `resources/views/partials/styles.blade.php`, incluidos con `@include('partials.styles')` desde `layouts/app.blade.php` y `layouts/auth.blade.php`)
 - PostgreSQL (Supabase) vía `pdo_pgsql` con `sslmode=require`
 - Tests con PHPUnit (`!` SQLite en memoria por defecto)
 
@@ -81,6 +81,8 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
   - `/` (dashboard) → todos (el contenido depende del rol).
 - **Dashboard** (`DashboardController`): para `moderador` muestra sus ganancias reportadas (Σ `reporte_pagos.id_moderador = yo` + Σ `pago_empleados.id_trab = yo`); para `modelo` igual pero con `id_modelo`. Superroles ven el dashboard completo.
 - Sidebar (`layouts/app.blade.php`): moderador ve Dashboard + Reportes; modelo ve solo Dashboard (y Cerrar sesión).
+- **Responsive**: en ≤ 860px el `.sidebar` pasa a cajón deslizable (botón `#navToggle`, overlay `#navBackdrop`, cierre con `Esc` o al pulsar un enlace), el `.topbar` es `sticky`, las tablas hacen scroll horizontal (`display: block; overflow-x: auto`) y los formularios pasan a una columna con `font-size: 1rem` (evita el zoom de iOS).
+- **Modo oscuro**: variables CSS en `:root` (claro) y `[data-theme="dark"]`. Un script inline en el `<head>` aplica el tema guardado en `localStorage('nomina-tema')` antes de pintar; si no hay, usa `prefers-color-scheme`. El botón `#themeToggle` (ícono sol/luna SVG) alterna y persiste la preferencia.
 - Prohibido → redirect a `/` con `withErrors('access')`.
 - Tests: `tests/Feature/RoleAccessTest.php`.
 

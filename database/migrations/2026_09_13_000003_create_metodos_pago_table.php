@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('metodos_pago', function (Blueprint $table) {
             $table->increments('id_mp');
-            $table->string('propietario'); 
+            $table->string('propietario');
             $table->string('metodo_pago');
             $table->decimal('impuesto', 5, 2)->default(0.00); // Ajustado formato %
             $table->decimal('porcentaje_cuenta', 5, 2)->nullable();

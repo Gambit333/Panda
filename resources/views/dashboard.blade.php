@@ -90,9 +90,9 @@
                             <span><strong>{{ $item->metodo_pago }}</strong></span>
                             <strong>${{ number_format($item->total, 2) }}</strong>
                         </div>
-                        <div style="background:#e2e8f0; border-radius:999px; height:8px; margin-top:.35rem; overflow:hidden;">
+                        <div style="background: var(--border); border-radius:999px; height:8px; margin-top:.35rem; overflow:hidden;">
                             @php $max = $ingresosPorMetodo->max('total') ?: 1; @endphp
-                            <div style="width: {{ ($item->total / $max) * 100 }}%; background:#4f46e5; height:8px; border-radius:999px;"></div>
+                            <div style="width: {{ ($item->total / $max) * 100 }}%; background: var(--primary); height:8px; border-radius:999px;"></div>
                         </div>
                     </div>
                 @empty

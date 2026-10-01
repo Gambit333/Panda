@@ -5,86 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Nómina') · Sistema de Nómina</title>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --bg: #f1f5f9;
-            --ink: #0f172a;
-            --muted: #64748b;
-            --border: #e2e8f0;
-            --danger: #dc2626;
-            --success: #16a34a;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); }
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar {
-            width: 240px; background: #1e293b; color: #cbd5e1; padding: 1.25rem .75rem;
-            display: flex; flex-direction: column; gap: .25rem; flex-shrink: 0;
-        }
-        .sidebar .brand { display: flex; align-items: center; gap: .6rem; padding: .5rem .75rem 1.25rem; color: #fff; font-weight: 700; font-size: 1.05rem; }
-        .sidebar .brand .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--primary); }
-        .sidebar a {
-            display: flex; align-items: center; gap: .6rem; padding: .55rem .75rem; border-radius: .5rem;
-            color: #cbd5e1; text-decoration: none; font-size: .9rem; transition: background .15s;
-        }
-        .sidebar a:hover { background: #334155; color: #fff; }
-        .sidebar a.active { background: var(--primary); color: #fff; }
-        .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: .9rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
-        .topbar h1 { font-size: 1.05rem; }
-        .content { padding: 1.5rem; flex: 1; }
-        .flash { padding: .9rem 1.1rem; border-radius: .5rem; margin-bottom: 1.25rem; font-size: .9rem; border: 1px solid; }
-        .flash.success { background: #f0fdf4; color: var(--success); border-color: #bbf7d0; }
-        .card { background: #fff; border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; }
-        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-        .stat { background: #fff; border: 1px solid var(--border); border-radius: .75rem; padding: 1.1rem 1.25rem; }
-        .stat .label { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
-        .stat .value { font-size: 1.5rem; font-weight: 700; margin-top: .25rem; }
-        table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-        th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); }
-        th { color: var(--muted); font-weight: 600; font-size: .76rem; text-transform: uppercase; letter-spacing: .03em; background: #f8fafc; }
-        tr:hover td { background: #f8fafc; }
-        .btn {
-            display: inline-flex; align-items: center; gap: .35rem; padding: .5rem .9rem; border-radius: .5rem;
-            border: 1px solid transparent; font-size: .85rem; text-decoration: none; cursor: pointer;
-            transition: background .15s; font-family: inherit;
-        }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-secondary { background: #fff; color: var(--ink); border-color: var(--border); }
-        .btn-secondary:hover { background: #f8fafc; }
-        .btn-danger { background: #fff; color: var(--danger); border-color: #fecaca; }
-        .btn-danger:hover { background: #fef2f2; }
-        .btn-sm { padding: .3rem .6rem; font-size: .78rem; }
-        form.inline { display: inline; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: .3rem; color: var(--ink); }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: .5rem;
-            font-size: .9rem; font-family: inherit; background: #fff;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: 2px solid var(--primary); outline-offset: -1px; border-color: transparent;
-        }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-        .text-danger { color: var(--danger); font-size: .78rem; margin-top: .25rem; }
-        .empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; }
-        .pagination { display: flex; justify-content: flex-end; padding-top: 1rem; font-size: .875rem; }
-        .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; background: #eef2ff; color: var(--primary); }
-        .mt-4 { margin-top: 1rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .flex-between { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-        .muted { color: var(--muted); }
-        .positive { color: var(--success); font-weight: 600; }
-        .actions { display: flex; gap: .4rem; }
-        @media (max-width: 768px) { .layout { flex-direction: column; } .sidebar { width: 100%; } }
-    </style>
+    <script>
+        (function () {
+            try {
+                var guardado = localStorage.getItem('nomina-tema');
+                var tema = guardado || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', tema);
+            } catch (e) {}
+        }());
+    </script>
+    @include('partials.styles')
 </head>
 <body>
 <div class="layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="brand">
             <span class="dot"></span> Panda Multiverse
         </div>
@@ -102,11 +36,28 @@
             <a href="{{ route('roles.index') }}" class="{{ active('roles') }}">Roles</a>
         @endif
     </aside>
+    <div class="sidebar-backdrop" id="navBackdrop"></div>
     <div class="main">
         <header class="topbar">
+    <div class="topbar-left">
+        <button type="button" class="icon-btn nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
     <h1>@yield('title', 'Dashboard')</h1>
+    </div>
     @auth
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="topbar-right">
+            <button type="button" class="icon-btn theme-toggle" id="themeToggle" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                </svg>
+            </button>
             <div style="text-align: right;">
                 <div style="font-size: .85rem; font-weight: 600;">{{ Auth::user()->nombre_completo ?? Auth::user()->nombre }}</div>
                 <div class="muted" style="font-size: .75rem;">{{ Auth::user()->email }}</div>
@@ -126,5 +77,43 @@
         </main>
     </div>
 </div>
+<script>
+    (function () {
+        var root = document.documentElement;
+        var toggle = document.getElementById('themeToggle');
+
+        if (toggle) {
+            toggle.addEventListener('click', function () {
+                var nuevo = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                root.setAttribute('data-theme', nuevo);
+                try { localStorage.setItem('nomina-tema', nuevo); } catch (e) {}
+            });
+        }
+
+        var sidebar = document.getElementById('sidebar');
+        var navToggle = document.getElementById('navToggle');
+        var backdrop = document.getElementById('navBackdrop');
+
+        function menu(abrir) {
+            if (!sidebar) {
+                return;
+            }
+            sidebar.classList.toggle('open', abrir);
+            if (backdrop) {
+                backdrop.classList.toggle('show', abrir);
+            }
+            document.body.classList.toggle('nav-open', abrir);
+        }
+
+        if (navToggle) {
+            navToggle.addEventListener('click', function () {
+                menu(!sidebar.classList.contains('open'));
+            });
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', function () { menu(false); });
+        }
+    }());
+</script>
 </body>
 </html>

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PagoEmpleado extends Model
 {
     protected $table = 'pago_empleados';
+
     protected $primaryKey = 'id_pago';
 
     public $timestamps = false;
@@ -21,8 +22,6 @@ class PagoEmpleado extends Model
         'monto_final',
         'nota',
     ];
-
-
 
     protected function casts(): array
     {
