@@ -7,7 +7,6 @@ use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\PagoEmpleadoController;
 use App\Http\Controllers\ReportePagoController;
 use App\Http\Controllers\RolController;
-use App\Http\Controllers\SesionController;
 use App\Http\Controllers\TrabajadorController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,9 +19,6 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
-    Route::post('/session/tab', [SesionController::class, 'registrarTab'])->name('session.tab');
-    Route::post('/session/tab/cerrar', [SesionController::class, 'cerrarTab'])->name('session.tab.cerrar');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 

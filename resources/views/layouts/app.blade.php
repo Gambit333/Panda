@@ -125,35 +125,5 @@
         </main>
     </div>
 </div>
-<script>
-(function () {
-    var tabId = (window.crypto && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : Date.now() + '-' + Math.random().toString(16).slice(2);
-
-    // Registra esta pestaña: mientras quede una viva, la sesión no se cierra por inactividad.
-    fetch('{{ route('session.tab') }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'X-Tab-Id': tabId,
-            'Accept': 'application/json'
-        },
-        credentials: 'same-origin',
-        cache: 'no-store'
-    }).catch(function () {});
-
-    // Al cerrarse la pestaña se da de baja; si era la última, el servidor invalida la sesión.
-    window.addEventListener('pagehide', function () {
-        var body = new URLSearchParams();
-        body.set('_token', '{{ csrf_token() }}');
-        body.set('tab_id', tabId);
-
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon('{{ route('session.tab.cerrar') }}', body);
-        }
-    });
-}());
-</script>
 </body>
 </html>
