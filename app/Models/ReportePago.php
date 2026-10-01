@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class ReportePago extends Model
 {
     protected $table = 'reporte_pagos';
+
     protected $primaryKey = 'id_reporte';
 
     public $timestamps = false;
@@ -25,6 +27,7 @@ class ReportePago extends Model
         'id_moderador',
         'id_cierre',
         'descripcion',
+        'comprobante',
     ];
 
     protected function casts(): array
@@ -54,5 +57,10 @@ class ReportePago extends Model
     public function cierreSemanal(): BelongsTo
     {
         return $this->belongsTo(CierreSemanal::class, 'id_cierre');
+    }
+
+    public function getComprobanteUrlAttribute(): ?string
+    {
+        return $this->comprobante ? Storage::disk('public')->url($this->comprobante) : null;
     }
 }

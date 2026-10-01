@@ -13,8 +13,8 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('apellido');
             $table->string('telefono')->nullable();
-            $table->string('email')->unique(); // Añadido UNIQUE
-            $table->string('password');
+            $table->string('email')->nullable()->unique(); // Único, nullable
+            $table->string('password')->nullable();
             $table->text('direccion')->nullable();
             $table->unsignedInteger('id_rol');
             $table->rememberToken(); // Requerido para Auth

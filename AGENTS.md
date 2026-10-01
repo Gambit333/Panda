@@ -44,15 +44,16 @@ Nota pooler: puerto **6543 = modo transacción** (conexiones cortas; recomendado
 | `metodos_pago` | `id_mp` (int) | `metodo_pago`, `impuesto?`, `porcentaje_cuenta?` | — |
 | `cierre_semanal` | `id_cierre` (int) | `fecha_inicio`, `fecha_fin`, `total?` | — |
 | `pago_empleados` | `id_pago` (int) | `monto` | `id_trab → trabajador`, `id_cierre → cierre_semanal` |
-| `reporte_pagos` | `id_reporte` (int) | `plataforma`, `user_cliente`, `precio`, `servicio`, `duracion?`, `fecha_reporte?`, `descripcion?` | `id_modelo → trabajador`, `id_moderador → trabajador`, `id_mp → metodos_pago`, `id_cierre? → cierre_semanal` |
+| `reporte_pagos` | `id_reporte` (int) | `plataforma`, `user_cliente`, `precio`, `servicio`, `duracion?`, `fecha_reporte?`, `descripcion?`, **`comprobante?`** | `id_modelo → trabajador`, `id_moderador → trabajador`, `id_mp → metodos_pago`, `id_cierre? → cierre_semanal` |
 
 Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mantener consistencia de tipos en Postgres.
 
 ## Lógica de negocio
 
 - **Cierre semanal** (`CierreSemanalController@store`): al crear un cierre con `fecha_inicio`/`fecha_fin`, se asignan automáticamente los reportes sin cierre (`id_cierre` NULL) cuya `fecha_reporte` cae dentro del período y se calcula `total = Σ precio`.
-- **Reporte de pago**: registra un pago recibido del cliente, la plataforma, el método de pago y los dos trabajadores involucrados (modelo y moderador).
+- **Reporte de pago**: registra un pago recibido del cliente, la plataforma, el método de pago y los dos trabajadores involucrados (modelo y moderador). El cierre semanal NO se selecciona en el formulario: lo asigna automáticamente el cierre según `fecha_reporte`.
 - **Pago a empleado**: registro manual del monto liquidado a un trabajador vinculado a un cierre.
+- **Comprobante de pago** (`reportes`): al crear/editar un reporte se puede adjuntar la imagen del comprobante. La imagen se guarda **en disco** (`storage/app/public/comprobantes`, enlazado en `/storage`) y la BD solo almacena la ruta (`reporte_pagos.comprobante`). Si GD está disponible se re-codifica a JPEG (máx. 1600px, calidad 72); si no, se guarda el original. Validación: imagen ≤ 4 MB (`jpeg/png/jpg/gif/webp`). Renombrar/eliminar el reporte borra el archivo del disco.
 
 ## Módulos y rutas
 
@@ -84,8 +85,8 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 
 - Login por **email** contra `trabajador.email` (case-insensitive) en `LoginController`. Todo el sitio (menos `/login*`) está protegido con middleware `auth` (redirect a `route('login')` por defecto del framework).
 - **Primer ingreso**: si el trabajador no tiene `password`, se le pide crearla dos veces y se guarda con `Hash::make`. Si ya tiene, se valida con `Hash::check`.
-- Auth sobre el modelo `Trabajador` (implementa `Authenticatable` con el trait de Laravel); provider `users` (config/auth.php) apunta a `App\Models\Trabajador`. Columna `password` (nullable, hashed) agregada vía migración `2026_09_15_023128_add_password_to_trabajador_table`.
-- Sesión `database` con `SESSION_EXPIRE_ON_CLOSE=true` + **timeout por actividad** middleware `session.timeout`: cada pestaña abierta hace POST a `/session/keepalive` cada 2 s (JS en `layouts/app.blade.php`); si el servidor no recibe pings y `session_last_seen` supera 15 s, invalida la sesión y redirige a `/login`. Efecto: el token muere ~5 s después de cerrar la última pestaña. El email pendiente del login vive en `session('auth_email')`.
+- Auth sobre el modelo `Trabajador` (implementa `Authenticatable` con el trait de Laravel); provider `users` (config/auth.php) apunta a `App\Models\Trabajador`. La columna `password` (nullable, hashed) vive en la migración `create_trabajador`.
+- **Sesión por cookie simple**: `SESSION_DRIVER=database`, `SESSION_LIFETIME=1` (minuto) y `SESSION_EXPIRE_ON_CLOSE=false`. La cookie de Laravel expira a los 60 s de inactividad; no hay keepalive por JS ni middleware de timeout. El email pendiente del login vive en `session('auth_email')`.
 - Tests: `tests/Feature/AuthFlowTest.php` (set de contraseña, login correcto/incorrecto, redirect de invitados).
 
 ## Comandos útiles

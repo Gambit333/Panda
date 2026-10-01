@@ -21,6 +21,7 @@
                     <th>Fecha</th>
                     <th>Moderador</th>
                     <th>Cierre</th>
+                    <th>Comp.</th>
                     <th></th>
                 </tr>
             </thead>
@@ -57,6 +58,15 @@
                             @endif
                         </td>
                         <td>
+                            @if ($reporte->comprobante)
+                                <a href="{{ $reporte->comprobante_url }}" target="_blank" title="Ver comprobante">
+                                    <img src="{{ $reporte->comprobante_url }}" alt="Comprobante" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
+                                </a>
+                            @else
+                                <span class="muted">-</span>
+                            @endif
+                        </td>
+                        <td>
                             <div class="actions">
                                 <a href="{{ route('reportes.edit', $reporte) }}" class="btn btn-secondary btn-sm">Editar</a>
                                 <form class="inline" method="POST" action="{{ route('reportes.destroy', $reporte) }}"
@@ -69,7 +79,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="empty">No hay reportes registrados.</td></tr>
+                    <tr><td colspan="11" class="empty">No hay reportes registrados.</td></tr>
                 @endforelse
             </tbody>
         </table>

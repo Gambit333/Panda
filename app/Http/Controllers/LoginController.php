@@ -85,13 +85,6 @@ class LoginController extends Controller
         return redirect()->route('login');
     }
 
-    public function keepalive(Request $request): \Symfony\Component\HttpFoundation\Response
-    {
-        session(['session_last_seen' => now()]);
-
-        return response()->noContent();
-    }
-
     private function findByEmail(string $email): ?Trabajador
     {
         return Trabajador::whereRaw('lower(email) = ?', [strtolower(trim($email))])->first();

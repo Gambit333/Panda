@@ -79,6 +79,9 @@
         .muted { color: var(--muted); }
         .positive { color: var(--success); font-weight: 600; }
         .actions { display: flex; gap: .4rem; }
+        .calc-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .3rem 0; }
+        .calc-row strong { font-weight: 700; }
+        .calc-empty { border-top: 1px solid var(--border, #ddd); }
         @media (max-width: 768px) { .layout { flex-direction: column; } .sidebar { width: 100%; } }
     </style>
 </head>
@@ -122,21 +125,5 @@
         </main>
     </div>
 </div>
-<script>
-(function () {
-    function ping() {
-        fetch('{{ route('session.keepalive') }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            cache: 'no-store',
-            credentials: 'same-origin'
-        }).catch(function () {});
-    }
-    setInterval(ping, 2000);
-}());
-</script>
 </body>
 </html>

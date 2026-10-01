@@ -17,9 +17,8 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/login/password', [LoginController::class, 'submitPassword'])->name('login.password.submit');
 });
 
-Route::middleware(['auth', 'session.timeout'])->group(function (): void {
+Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-    Route::post('/session/keepalive', [LoginController::class, 'keepalive'])->name('session.keepalive');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 

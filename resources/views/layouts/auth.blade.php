@@ -126,22 +126,5 @@
         </main>
     </div>
 </div>
-<script>
-(function () {
-    function ping() {
-        fetch('{{ route('session.keepalive') }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            cache: 'no-store',
-            credentials: 'same-origin'
-        }).catch(function () {});
-    }
-    // Mantener sesión activa haciendo un ping cada 60 segundos (60000ms)
-    setInterval(ping, 60000);
-}());
-</script>
 </body>
 </html>

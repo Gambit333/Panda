@@ -35,6 +35,57 @@
         </div>
     </div>
 
+    @if (count($calculos['grupos']) > 0)
+        <div class="card mb-4">
+            <h2 style="font-size:1rem; margin-bottom:0.5rem;">Cálculo de comisiones por cuenta</h2>
+            <div style="border-bottom:1px solid var(--border,#ddd); padding-bottom:0.6rem; margin-bottom:0.6rem;">
+                <div class="calc-row">
+                    <span>TOTAL FACTURADO</span><strong>${{ number_format($calculos['total_facturado'], 2) }}</strong>
+                </div>
+                <div class="calc-row">
+                    <span>TOTAL CON IMPUESTOS ({{ $calculos['impuesto_porcentaje'] }}%)</span><strong>${{ number_format($calculos['total_con_impuestos'], 2) }}</strong>
+                </div>
+                <div class="calc-row">
+                    <span>Impuestos para pagar las cuentas ({{ $calculos['impuesto_porcentaje'] }}%)</span><strong>${{ number_format($calculos['total_impuestos'], 2) }}</strong>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cuenta / Método</th>
+                        <th>Bruto</th>
+                        <th>Comisión</th>
+                        <th>Neto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($calculos['grupos'] as $grupo)
+                        <tr>
+                            <td>
+                                {{ $grupo['metodo'] }}
+                                @if ($grupo['propietario'])
+                                    <small class="muted">({{ $grupo['propietario'] }})</small>
+                                @endif
+                                @if ($grupo['porcentaje'] > 0)
+                                    <small class="muted">({{ number_format($grupo['porcentaje'], 0) }}%)</small>
+                                @endif
+                            </td>
+                            <td>${{ number_format($grupo['bruto'], 2) }}</td>
+                            <td class="text-danger">${{ number_format($grupo['comision'], 2) }}</td>
+                            <td class="positive" style="font-weight:bold;">${{ number_format($grupo['neto'], 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="calc-row calc-empty" style="padding-top:0.6rem; margin-top:0.6rem;">
+                <span>COMISIÓN TOTAL</span><strong>${{ number_format($calculos['comision_total'], 2) }}</strong>
+            </div>
+            <div class="calc-row calc-empty" style="padding-top:0.6rem;">
+                <span>RESTO PARA BREA (impuestos − comisión total)</span><strong>${{ number_format($calculos['resto_brea'], 2) }}</strong>
+            </div>
+        </div>
+    @endif
+
     <div class="card mb-4">
         <h2 style="font-size:1rem; margin-bottom:1rem;">Reportes del cierre</h2>
         <table>

@@ -76,27 +76,6 @@ class AuthFlowTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_session_expires_after_inactivity(): void
-    {
-        $trabajador = $this->trabajadorConPassword();
-        $this->actingAs($trabajador);
-
-        session(['session_last_seen' => now()->subMinutes(2)]);
-
-        $this->get('/')->assertRedirect('/login');
-        $this->assertGuest();
-    }
-
-    public function test_keepalive_keeps_session_alive(): void
-    {
-        $trabajador = $this->trabajadorConPassword();
-        $this->actingAs($trabajador);
-
-        $this->get('/')->assertOk();
-        $this->post('/session/keepalive')->assertNoContent();
-        $this->assertAuthenticated();
-    }
-
     private function trabajadorConPassword(): Trabajador
     {
         $rol = Rol::create(['rol' => 'admin']);

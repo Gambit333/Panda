@@ -5,7 +5,7 @@
     $esAdmin ??= in_array($usuarioActual?->id_rol, [1, 3]);
 @endphp
 
-<form method="POST" action="{{ $reporte ? route('reportes.update', $reporte) : route('reportes.store') }}">
+<form method="POST" action="{{ $reporte ? route('reportes.update', $reporte) : route('reportes.store') }}" enctype="multipart/form-data">
     @csrf
     @if ($reporte) @method('PUT') @endif
 
@@ -89,25 +89,29 @@
             </select>
             @error('id_moderador') <div class="text-danger">{{ $message }}</div> @enderror
         </div>
-
-        <div class="form-group">
-            <label>Cierre semanal</label>
-            <select name="id_cierre">
-                <option value="">Sin asignar</option>
-                @foreach ($cierres as $cierre)
-                    <option value="{{ $cierre->id_cierre }}" @selected(old('id_cierre', $reporte?->id_cierre) == $cierre->id_cierre)>
-                        #{{ $cierre->id_cierre }} — {{ $cierre->fecha_inicio?->format('d/m/Y') }} / {{ $cierre->fecha_fin?->format('d/m/Y') }}
-                    </option>
-                @endforeach
-            </select>
-            @error('id_cierre') <div class="text-danger">{{ $message }}</div> @enderror
-        </div>
     </div>
 
     <div class="form-group">
         <label>Descripción / Detalles adicionales</label>
         <textarea name="descripcion" rows="3" placeholder="Observaciones sobre la transacción o especificaciones del cliente...">{{ old('descripcion', $reporte?->descripcion) }}</textarea>
         @error('descripcion') <div class="text-danger">{{ $message }}</div> @enderror
+    </div>
+
+    <div class="form-group">
+        <label>Comprobante de pago (imagen)</label>
+        @if ($reporte?->comprobante)
+            <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
+                <a href="{{ $reporte->comprobante_url }}" target="_blank">
+                    <img src="{{ $reporte->comprobante_url }}" alt="Comprobante actual" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">
+                </a>
+                <label style="font-weight:400;">
+                    <input type="checkbox" name="eliminar_comprobante" value="1"> <span class="muted">Eliminar comprobante actual</span>
+                </label>
+            </div>
+        @endif
+        <input type="file" name="comprobante" accept="image/*">
+        @error('comprobante') <div class="text-danger">{{ $message }}</div> @enderror
+        <small class="muted">Se guarda en disco y se comprime; la BD solo almacena la ruta. Máx. 4 MB.</small>
     </div>
 
     <div class="flex-between mt-4">

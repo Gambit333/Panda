@@ -59,7 +59,7 @@ class RoleAccessTest extends TestCase
         $rolModelo = Rol::create(['rol' => 'modelo']);
         $modelo = Trabajador::create(['nombre' => 'Luis', 'apellido' => 'Modelo', 'id_rol' => $rolModelo->id_rol]);
         $moderador = $this->trabajadorDeRol('moderador');
-        $metodo = MetodoPago::create(['metodo_pago' => 'PayPal']);
+        $metodo = MetodoPago::create(['propietario' => 'Equipo', 'metodo_pago' => 'PayPal']);
 
         $this->crearReporte($moderador, $modelo, $metodo, 100);
         $this->crearReporte($moderador, $modelo, $metodo, 50);
@@ -80,7 +80,7 @@ class RoleAccessTest extends TestCase
     {
         $modelo = $this->trabajadorDeRol('modelo', 'Rania', 'Modelo');
         $moderador = $this->trabajadorDeRol('moderador', 'Ana', 'Moderadora');
-        $metodo = MetodoPago::create(['metodo_pago' => 'PayPal']);
+        $metodo = MetodoPago::create(['propietario' => 'Equipo', 'metodo_pago' => 'PayPal']);
 
         $this->crearReporte($moderador, $modelo, $metodo, 200);
         $this->crearReporte($moderador, $modelo, $metodo, 75);
@@ -94,7 +94,7 @@ class RoleAccessTest extends TestCase
         PagoEmpleado::create([
             'id_trab' => $modelo->id_trab,
             'id_cierre' => CierreSemanal::firstOrFail()->id_cierre,
-            'monto' => 40,
+            'monto_final' => 40,
         ]);
 
         $this->actingAs($modelo);
