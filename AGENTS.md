@@ -45,6 +45,7 @@ Nota pooler: puerto **6543 = modo transacción** (conexiones cortas; recomendado
 | `cierre_semanal` | `id_cierre` (int) | `fecha_inicio`, `fecha_fin`, `total?` | — |
 | `pago_empleados` | `id_pago` (int) | `monto` | `id_trab → trabajador`, `id_cierre → cierre_semanal` |
 | `reporte_pagos` | `id_reporte` (int) | `plataforma`, `user_cliente`, `precio`, `servicio`, `duracion?`, `fecha_reporte?`, `descripcion?`, **`comprobante?`** | `id_modelo → trabajador`, `id_moderador → trabajador`, `id_mp → metodos_pago`, `id_cierre? → cierre_semanal` |
+| `detalle_pago_cierre` | `id_detalle` (int) | `concepto` (`modelo`/`moderador`/`pinto`/`admin`), `monto`, `nota?` | `id_cierre → cierre_semanal` (cascade), `id_trab? → trabajador` |
 
 Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mantener consistencia de tipos en Postgres.
 
@@ -54,6 +55,8 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 - **Reporte de pago**: registra un pago recibido del cliente, la plataforma, el método de pago y los dos trabajadores involucrados (modelo y moderador). El cierre semanal NO se selecciona en el formulario: lo asigna automáticamente el cierre según `fecha_reporte`.
 - **Pago a empleado**: registro manual del monto liquidado a un trabajador vinculado a un cierre.
 - **Comprobante de pago** (`reportes`): al crear/editar un reporte se puede adjuntar la imagen del comprobante. La imagen se guarda **en disco** (`storage/app/public/comprobantes`, enlazado en `/storage`) y la BD solo almacena la ruta (`reporte_pagos.comprobante`). Si GD está disponible se re-codifica a JPEG (máx. 1600px, calidad 72); si no, se guarda el original. Validación: imagen ≤ 4 MB (`jpeg/png/jpg/gif/webp`). Renombrar/eliminar el reporte borra el archivo del disco.
+- **Comisión por cuenta** (`cierres.show`): el cierre agrupa sus reportes por `metodos_pago` y aplica `porcentaje_cuenta`: neto = `precio × (1 - pct/100)`, comisión = `precio × pct/100`. Impuesto global 15% (`CierreSemanalController::IMPUESTO_PORCENTAJE`) y el resto para Brea = impuestos − comisión total.
+- **Pagos calculados** (`app/Support/CalculadorPagosCierre.php`): al generar un cierre se calcula y **guarda** en `detalle_pago_cierre` (tarjeta "Pagos calculados" en `cierres.show`; los cierres antiguos se regeneran al abrir su `show`). Flujo por reporte: base = precio **neto** tras comisión − 15%. Modelo normal: 50% modelo / 20% moderador / 30% fondo administrativo. **María Brea (rol `ceo`) como modelo**: 75% Brea / 18% su moderador / 7% María Pinto (se busca por apellido "pinto"). Fondo administrativo: 20% rol `ceo`, 7% María Pinto, 1.5% **a cada** rol `admin`. Identificación de personas: rol `ceo`/`admin` + apellido `pinto`. Tests: `tests/Feature/CalculoPagosCierreTest.php`.
 
 ## Módulos y rutas
 

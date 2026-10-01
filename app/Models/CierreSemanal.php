@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CierreSemanal extends Model
 {
     protected $table = 'cierre_semanal';
-    protected $primaryKey = 'id_cierre';
 
+    protected $primaryKey = 'id_cierre';
 
     public $timestamps = false;
 
@@ -38,5 +38,10 @@ class CierreSemanal extends Model
     public function reportes(): HasMany
     {
         return $this->hasMany(ReportePago::class, 'id_cierre');
+    }
+
+    public function detallesPago(): HasMany
+    {
+        return $this->hasMany(DetallePagoCierre::class, 'id_cierre');
     }
 }

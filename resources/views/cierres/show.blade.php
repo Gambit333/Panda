@@ -86,6 +86,46 @@
         </div>
     @endif
 
+    @if ($cierre->detallesPago->isNotEmpty())
+        @php
+            $pagos = $cierre->detallesPago->sortBy(fn ($d) => $d->trabajador?->nombre_completo ?? '');
+            $totales = collect($conceptos)->mapWithKeys(fn ($label, $clave) => [$clave => $pagos->where('concepto', $clave)->sum('monto')]);
+        @endphp
+        <div class="card mb-4">
+            <h2 style="font-size:1rem; margin-bottom:1rem;">Pagos calculados: modelos, moderadores y sección administrativa</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Trabajador</th>
+                        <th>Concepto</th>
+                        <th>Detalle</th>
+                        <th>Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($pagos as $detalle)
+                        <tr>
+                            <td><strong>{{ $detalle->trabajador?->nombre_completo ?? 'Sin asignar' }}</strong></td>
+                            <td>{{ $conceptos[$detalle->concepto] ?? $detalle->concepto }}</td>
+                            <td><small class="muted">{{ $detalle->nota }}</small></td>
+                            <td class="positive" style="font-weight:bold;">${{ number_format($detalle->monto, 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div style="margin-top:0.75rem;">
+                @foreach ($totales as $clave => $total)
+                    <div class="calc-row">
+                        <span>{{ $conceptos[$clave] ?? $clave }}</span><strong>${{ number_format($total, 2) }}</strong>
+                    </div>
+                @endforeach
+                <div class="calc-row calc-empty" style="margin-top:0.5rem;">
+                    <span>TOTAL A PAGAR</span><strong>${{ number_format($totales->sum(), 2) }}</strong>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="card mb-4">
         <h2 style="font-size:1rem; margin-bottom:1rem;">Reportes del cierre</h2>
         <table>

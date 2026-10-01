@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\CierreSemanal;
+use App\Models\DetallePagoCierre;
 use App\Models\ReportePago;
+use App\Support\CalculadorPagosCierre;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -55,6 +57,8 @@ class CierreSemanalController extends Controller
             'total_neto' => $totalNeto,
         ]);
 
+        $this->persistirCalculoPagos($cierre);
+
         return redirect()
             ->route('cierres.show', $cierre)
             ->with('success', "Cierre generado: {$reportes->count()} reportes asignados.");
@@ -66,7 +70,38 @@ class CierreSemanalController extends Controller
 
         $calculos = $this->calcularComisiones($cierre);
 
-        return view('cierres.show', compact('cierre', 'calculos'));
+        // Cierres creados antes de existir el cálculo de pagos: se genera al vuelo.
+        if ($cierre->detallesPago()->count() === 0 && $cierre->reportes->isNotEmpty()) {
+            $this->persistirCalculoPagos($cierre);
+        }
+
+        $cierre->load('detallesPago.trabajador');
+
+        return view('cierres.show', [
+            'cierre' => $cierre,
+            'calculos' => $calculos,
+            'conceptos' => CalculadorPagosCierre::CONCEPTOS,
+        ]);
+    }
+
+    /**
+     * Guarda el detalle calculado de pagos (modelos, moderadores y sección administrativa).
+     */
+    private function persistirCalculoPagos(CierreSemanal $cierre): void
+    {
+        $filas = (new CalculadorPagosCierre)->calcular($cierre);
+
+        DetallePagoCierre::where('id_cierre', $cierre->id_cierre)->delete();
+
+        foreach ($filas as $fila) {
+            DetallePagoCierre::create([
+                'id_cierre' => $cierre->id_cierre,
+                'id_trab' => $fila['id_trab'],
+                'concepto' => $fila['concepto'],
+                'monto' => $fila['monto'],
+                'nota' => $fila['nota'],
+            ]);
+        }
     }
 
     /**

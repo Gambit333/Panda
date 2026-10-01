@@ -33,7 +33,7 @@ class ReportePagoController extends Controller
         $metodosPago = MetodoPago::all();
 
         if ($esAdmin) {
-            $modelos = $this->trabajadoresPorRol(['modelo']);
+            $modelos = $this->trabajadoresPorRol(['modelo', 'ceo']);
             $moderadores = $this->trabajadoresPorRol(['moderador', 'chatter']);
         } else {
             // Moderador: Carga únicamente las modelos asignadas a él en la tabla pivote
