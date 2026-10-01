@@ -81,7 +81,8 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
   - `/` (dashboard) → todos (el contenido depende del rol).
 - **Dashboard** (`DashboardController`): para `moderador` muestra sus ganancias reportadas (Σ `reporte_pagos.id_moderador = yo` + Σ `pago_empleados.id_trab = yo`); para `modelo` igual pero con `id_modelo`. Superroles ven el dashboard completo.
 - Sidebar (`layouts/app.blade.php`): moderador ve Dashboard + Reportes; modelo ve solo Dashboard (y Cerrar sesión).
-- **Responsive**: en ≤ 860px el `.sidebar` pasa a cajón deslizable (botón `#navToggle`, overlay `#navBackdrop`, cierre con `Esc` o al pulsar un enlace), el `.topbar` es `sticky`, las tablas hacen scroll horizontal (`display: block; overflow-x: auto`) y los formularios pasan a una columna con `font-size: 1rem` (evita el zoom de iOS).
+- **Responsive**: en ≤ 860px el `.sidebar` pasa a cajón deslizable (botón `#navToggle`, overlay `#navBackdrop`, cierre con `Esc` o al pulsar un enlace) y el `.topbar` es `sticky`. **Toda tabla va envuelta en `<div class="table-wrap">`** (CSS en `partials/styles.blade.php`): el wrapper tiene `overflow-x: auto` y la tabla `min-width: 100%`, así que se adapta al ancho disponible y en celulares (≤ 860px, `white-space: nowrap`) se desliza a la derecha para verse completa sin romper el layout; los formularios pasan a una columna con `font-size: 1rem` (evita el zoom de iOS) y las tarjetas tienen `min-width: 0` para que no desbonden dentro de grids.
+- **Dashboard** (`resources/views/dashboard.blade.php`): “Ingresos por método de pago” es una **tabla** (Método de pago / Ingresos / % del total / Participación con barra) envuelta en `.table-wrap`, igual que “Últimos reportes de pago”, “Últimos cierres semanales” y “Mis ganancias recientes”.
 - **Modo oscuro**: variables CSS en `:root` (claro) y `[data-theme="dark"]`. Un script inline en el `<head>` aplica el tema guardado en `localStorage('nomina-tema')` antes de pintar; si no hay, usa `prefers-color-scheme`. El botón `#themeToggle` (ícono sol/luna SVG) alterna y persiste la preferencia.
 - Prohibido → redirect a `/` con `withErrors('access')`.
 - Tests: `tests/Feature/RoleAccessTest.php`.
@@ -93,6 +94,8 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 - Auth sobre el modelo `Trabajador` (implementa `Authenticatable` con el trait de Laravel); provider `users` (config/auth.php) apunta a `App\Models\Trabajador`. La columna `password` (nullable, hashed) vive en la migración `create_trabajador`.
 - **Sesión por cookie simple**: `SESSION_DRIVER=database`, `SESSION_LIFETIME=1` (minuto) y `SESSION_EXPIRE_ON_CLOSE=false`. La cookie de Laravel expira a los 60 s de inactividad; no hay keepalive por JS ni middleware de timeout. El email pendiente del login vive en `session('auth_email')`.
 - Tests: `tests/Feature/AuthFlowTest.php` (set de contraseña, login correcto/incorrecto, redirect de invitados).
+- **Olvidé mi contraseña**: no hay correos ni códigos. En la pantalla `/login/password` el botón **"¿Olvidaste tu contraseña?"`** hace `POST /login/recuperar` (`LoginController@recuperarPassword`), que marca `session('crear_password')` y vuelve a la misma pantalla en modo "crear contraseña" (nueva + confirmación, `min:6`), igual que el primer ingreso; al guardar, entra al dashboard. Solo funciona con un email ya validado en sesión. Ojo: no hay verificación de identidad, así que quien conozca el email de un trabajador puede cambiarle la contraseña.
+- Tests: `tests/Feature/AuthFlowTest.php` (set de contraseña, login correcto/incorrecto, redirect de invitados) y `tests/Feature/RecuperarPasswordTest.php` (creación de contraseña nueva).
 
 ## Comandos útiles
 

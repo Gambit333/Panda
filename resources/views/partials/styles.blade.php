@@ -88,7 +88,7 @@
     .flash { padding: .9rem 1.1rem; border-radius: .5rem; margin-bottom: 1.25rem; font-size: .9rem; border: 1px solid; }
     .flash.success { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
 
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; min-width: 0; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .stat { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.1rem 1.25rem; }
     .stat .label { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
@@ -98,6 +98,11 @@
     th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); }
     th { color: var(--muted); font-weight: 600; font-size: .76rem; text-transform: uppercase; letter-spacing: .03em; background: var(--surface-alt); }
     tr:hover td { background: var(--surface-alt); }
+
+    /* Contenedor con scroll horizontal: la tabla se adapta al ancho disponible
+       y, si no cabe (celulares), se desliza a la derecha sin romper el layout. */
+    .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-wrap > table { min-width: 100%; }
 
     .btn {
         display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
@@ -176,8 +181,9 @@
         .stat .value { font-size: 1.25rem; }
         .form-grid { grid-template-columns: 1fr; }
 
-        /* Tablas con scroll horizontal para no romper el layout en pantallas chicas */
-        table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+        /* Tablas: se adaptan al ancho disponible y se scrollean a la derecha si no caben */
+        .table-wrap { -webkit-overflow-scrolling: touch; }
+        .table-wrap > table { min-width: 100%; white-space: nowrap; }
         th, td { padding: .5rem .6rem; }
 
         .form-group input, .form-group select, .form-group textarea { font-size: 1rem; }

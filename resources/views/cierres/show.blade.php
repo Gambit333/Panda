@@ -49,34 +49,37 @@
                     <span>Impuestos para pagar las cuentas ({{ $calculos['impuesto_porcentaje'] }}%)</span><strong>${{ number_format($calculos['total_impuestos'], 2) }}</strong>
                 </div>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Cuenta / Método</th>
-                        <th>Bruto</th>
-                        <th>Comisión</th>
-                        <th>Neto</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($calculos['grupos'] as $grupo)
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td>
-                                {{ $grupo['metodo'] }}
-                                @if ($grupo['propietario'])
-                                    <small class="muted">({{ $grupo['propietario'] }})</small>
-                                @endif
-                                @if ($grupo['porcentaje'] > 0)
-                                    <small class="muted">({{ number_format($grupo['porcentaje'], 0) }}%)</small>
-                                @endif
-                            </td>
-                            <td>${{ number_format($grupo['bruto'], 2) }}</td>
-                            <td class="text-danger">${{ number_format($grupo['comision'], 2) }}</td>
-                            <td class="positive" style="font-weight:bold;">${{ number_format($grupo['neto'], 2) }}</td>
+                            <th>Cuenta / Método</th>
+                            <th>Bruto</th>
+                            <th>Comisión</th>
+                            <th>Neto</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach ($calculos['grupos'] as $grupo)
+                            <tr>
+                                <td>
+                                    {{ $grupo['metodo'] }}
+                                    @if ($grupo['propietario'])
+                                        <small class="muted">({{ $grupo['propietario'] }})</small>
+                                    @endif
+                                    @if ($grupo['porcentaje'] > 0)
+                                        <small class="muted">({{ number_format($grupo['porcentaje'], 0) }}%)</small>
+                                    @endif
+                                </td>
+                                <td>${{ number_format($grupo['bruto'], 2) }}</td>
+                                <td class="text-danger">${{ number_format($grupo['comision'], 2) }}</td>
+                                <td class="positive" style="font-weight:bold;">${{ number_format($grupo['neto'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+
+                </table>
+            </div>
             <div class="calc-row calc-empty" style="padding-top:0.6rem; margin-top:0.6rem;">
                 <span>COMISIÓN TOTAL</span><strong>${{ number_format($calculos['comision_total'], 2) }}</strong>
             </div>
@@ -93,30 +96,33 @@
         @endphp
         <div class="card mb-4">
             <h2 style="font-size:1rem; margin-bottom:1rem;">Pagos calculados: modelos, moderadores y sección administrativa</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Trabajador</th>
-                        <th>Total antes de impuestos</th>
-                        <th>Total después de impuestos</th>
-                        <th>Concepto</th>
-                        <th>Detalle</th>
-                        <th>Monto</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($pagos as $detalle)
+            <div class="table-wrap">
+                <table>
+                    <thead>
                         <tr>
-                            <td><strong>{{ $detalle->trabajador?->nombre_completo ?? 'Sin asignar' }}</strong></td>
-                            <td>${{ number_format($detalle->total_antes_impuestos ?? 0, 2) }}</td>
-                            <td>${{ number_format($detalle->total_despues_impuestos ?? 0, 2) }}</td>
-                            <td>{{ $conceptos[$detalle->concepto] ?? $detalle->concepto }}</td>
-                            <td><small class="muted">{{ $detalle->nota }}</small></td>
-                            <td class="positive" style="font-weight:bold;">${{ number_format($detalle->monto, 2) }}</td>
+                            <th>Trabajador</th>
+                            <th>Total antes de impuestos</th>
+                            <th>Total después de impuestos</th>
+                            <th>Concepto</th>
+                            <th>Detalle</th>
+                            <th>Monto</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach ($pagos as $detalle)
+                            <tr>
+                                <td><strong>{{ $detalle->trabajador?->nombre_completo ?? 'Sin asignar' }}</strong></td>
+                                <td>${{ number_format($detalle->total_antes_impuestos ?? 0, 2) }}</td>
+                                <td>${{ number_format($detalle->total_despues_impuestos ?? 0, 2) }}</td>
+                                <td>{{ $conceptos[$detalle->concepto] ?? $detalle->concepto }}</td>
+                                <td><small class="muted">{{ $detalle->nota }}</small></td>
+                                <td class="positive" style="font-weight:bold;">${{ number_format($detalle->monto, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+
+                </table>
+            </div>
             <div style="margin-top:0.75rem;">
                 @foreach ($totales as $clave => $total)
                     <div class="calc-row">
@@ -132,72 +138,78 @@
 
     <div class="card mb-4">
         <h2 style="font-size:1rem; margin-bottom:1rem;">Reportes del cierre</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Modelo</th>
-                    <th>Plataforma / Cliente</th>
-                    <th>Método / Cuenta</th>
-                    <th>Servicio</th>
-                    <th>Precio</th>
-                    <th>Moderador</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($cierre->reportes as $reporte)
+        <div class="table-wrap">
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ $reporte->modelo?->nombre_completo ?? '-' }}</td>
-                        <td>{{ $reporte->plataforma }} / {{ $reporte->user_cliente }}</td>
-                        <td>
-                            {{ $reporte->metodoPago?->metodo_pago ?? '-' }}
-                            @if($reporte->metodoPago?->propietario)
-                                <small class="muted">({{ $reporte->metodoPago->propietario }})</small>
-                            @endif
-                        </td>
-                        <td>{{ Str::limit($reporte->servicio, 25) }}</td>
-                        <td class="positive">${{ number_format($reporte->precio, 2) }}</td>
-                        <td>{{ $reporte->moderador?->nombre_completo ?? '-' }}</td>
+                        <th>Modelo</th>
+                        <th>Plataforma / Cliente</th>
+                        <th>Método / Cuenta</th>
+                        <th>Servicio</th>
+                        <th>Precio</th>
+                        <th>Moderador</th>
                     </tr>
-                @empty
-                    <tr><td colspan="6" class="empty">Este cierre no tiene reportes asignados.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($cierre->reportes as $reporte)
+                        <tr>
+                            <td>{{ $reporte->modelo?->nombre_completo ?? '-' }}</td>
+                            <td>{{ $reporte->plataforma }} / {{ $reporte->user_cliente }}</td>
+                            <td>
+                                {{ $reporte->metodoPago?->metodo_pago ?? '-' }}
+                                @if($reporte->metodoPago?->propietario)
+                                    <small class="muted">({{ $reporte->metodoPago->propietario }})</small>
+                                @endif
+                            </td>
+                            <td>{{ Str::limit($reporte->servicio, 25) }}</td>
+                            <td class="positive">${{ number_format($reporte->precio, 2) }}</td>
+                            <td>{{ $reporte->moderador?->nombre_completo ?? '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="empty">Este cierre no tiene reportes asignados.</td></tr>
+                    @endforelse
+                </tbody>
+
+            </table>
+        </div>
     </div>
 
     <div class="card">
         <h2 style="font-size:1rem; margin-bottom:1rem;">Pagos a empleados</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Empleado</th>
-                    <th>Monto Bruto</th>
-                    <th>Monto Neto</th>
-                    <th>Deuda</th>
-                    <th>Monto Final</th>
-                    <th>Nota</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($cierre->pagosEmpleados as $pago)
+        <div class="table-wrap">
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ $pago->trabajador?->nombre_completo ?? '-' }}</td>
-                        <td>${{ number_format($pago->monto_bruto, 2) }}</td>
-                        <td>${{ number_format($pago->monto_neto, 2) }}</td>
-                        <td class="text-danger">-${{ number_format($pago->deuda, 2) }}</td>
-                        <td class="positive" style="font-weight:bold;">${{ number_format($pago->monto_final, 2) }}</td>
-                        <td><small class="muted">{{ $pago->nota ?? '-' }}</small></td>
-                        <td>
-                            <div class="actions">
-                                <a href="{{ route('pagos.edit', $pago) }}" class="btn btn-secondary btn-sm">Editar</a>
-                            </div>
-                        </td>
+                        <th>Empleado</th>
+                        <th>Monto Bruto</th>
+                        <th>Monto Neto</th>
+                        <th>Deuda</th>
+                        <th>Monto Final</th>
+                        <th>Nota</th>
+                        <th></th>
                     </tr>
-                @empty
-                    <tr><td colspan="7" class="empty">Aún no se registran pagos para este cierre.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($cierre->pagosEmpleados as $pago)
+                        <tr>
+                            <td>{{ $pago->trabajador?->nombre_completo ?? '-' }}</td>
+                            <td>${{ number_format($pago->monto_bruto, 2) }}</td>
+                            <td>${{ number_format($pago->monto_neto, 2) }}</td>
+                            <td class="text-danger">-${{ number_format($pago->deuda, 2) }}</td>
+                            <td class="positive" style="font-weight:bold;">${{ number_format($pago->monto_final, 2) }}</td>
+                            <td><small class="muted">{{ $pago->nota ?? '-' }}</small></td>
+                            <td>
+                                <div class="actions">
+                                    <a href="{{ route('pagos.edit', $pago) }}" class="btn btn-secondary btn-sm">Editar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7" class="empty">Aún no se registran pagos para este cierre.</td></tr>
+                    @endforelse
+                </tbody>
+
+            </table>
+        </div>
     </div>
 @endsection

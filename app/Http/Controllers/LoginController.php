@@ -41,15 +41,30 @@ class LoginController extends Controller
 
         return view('auth.password', [
             'trabajador' => $trabajador,
-            'createsPassword' => blank($trabajador->password),
+            'createsPassword' => $this->debeCrearPassword($trabajador),
         ]);
+    }
+
+    /**
+     * "Olvidé mi contraseña": pasa el login al modo de crear contraseña
+     * (misma pantalla del primer ingreso) sin necesidad de código por correo.
+     */
+    public function recuperarPassword(Request $request): RedirectResponse
+    {
+        if (! is_string(session()->get('auth_email'))) {
+            return redirect()->route('login');
+        }
+
+        $request->session()->put('crear_password', true);
+
+        return redirect()->route('login.password');
     }
 
     public function submitPassword(Request $request): RedirectResponse
     {
         $trabajador = $this->pendingTrabajador();
 
-        if (blank($trabajador->password)) {
+        if ($this->debeCrearPassword($trabajador)) {
             $data = $request->validate([
                 'password' => ['required', 'string', 'min:6', 'confirmed'],
             ]);
@@ -68,7 +83,7 @@ class LoginController extends Controller
             }
         }
 
-        session()->forget('auth_email');
+        session()->forget(['auth_email', 'crear_password']);
 
         Auth::login($trabajador);
         $request->session()->regenerate();
@@ -88,6 +103,11 @@ class LoginController extends Controller
     private function findByEmail(string $email): ?Trabajador
     {
         return Trabajador::whereRaw('lower(email) = ?', [strtolower(trim($email))])->first();
+    }
+
+    private function debeCrearPassword(Trabajador $trabajador): bool
+    {
+        return blank($trabajador->password) || session()->get('crear_password') === true;
     }
 
     private function pendingTrabajador(): Trabajador

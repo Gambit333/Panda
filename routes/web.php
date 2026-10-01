@@ -15,6 +15,7 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/login', [LoginController::class, 'submitEmail'])->name('login.submit-email');
     Route::get('/login/password', [LoginController::class, 'showPasswordForm'])->name('login.password');
     Route::post('/login/password', [LoginController::class, 'submitPassword'])->name('login.password.submit');
+    Route::post('/login/recuperar', [LoginController::class, 'recuperarPassword'])->name('login.recuperar');
 });
 
 Route::middleware('auth')->group(function (): void {

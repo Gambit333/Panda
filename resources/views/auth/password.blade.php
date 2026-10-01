@@ -26,8 +26,13 @@
             </div>
 
             @if ($createsPassword)
-                <h1 class="text-2xl font-bold tracking-tight text-white">Bienvenido, {{ $trabajador->nombre }}</h1>
-                <p class="text-xs text-zinc-400 mt-1">Tu cuenta no tiene contraseña todavía. Crea una para poder iniciar sesión.</p>
+                @if (session('crear_password'))
+                    <h1 class="text-2xl font-bold tracking-tight text-white">Crea tu contraseña</h1>
+                    <p class="text-xs text-zinc-400 mt-1">Escribe una contraseña nueva para tu cuenta, {{ $trabajador->nombre }}.</p>
+                @else
+                    <h1 class="text-2xl font-bold tracking-tight text-white">Bienvenido, {{ $trabajador->nombre }}</h1>
+                    <p class="text-xs text-zinc-400 mt-1">Tu cuenta no tiene contraseña todavía. Crea una para poder iniciar sesión.</p>
+                @endif
             @else
                 <h1 class="text-2xl font-bold tracking-tight text-white">Hola, {{ $trabajador->nombre }}</h1>
                 <p class="text-xs text-zinc-400 mt-1">Ingresa la contraseña de tu cuenta.</p>
@@ -86,10 +91,19 @@
         </form>
 
         <!-- Botón de regreso -->
-        <div class="mt-6 text-center">
+        <div class="mt-6 flex items-center justify-between">
             <a href="{{ route('login') }}" class="text-xs text-zinc-500 hover:text-purple-400 transition-colors inline-flex items-center gap-1">
                 ← Volver a ingresar otro email
             </a>
+
+            @unless ($createsPassword)
+                <form method="POST" action="{{ route('login.recuperar') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-xs text-zinc-500 hover:text-purple-400 transition-colors">
+                        ¿Olvidaste tu contraseña?
+                    </button>
+                </form>
+            @endunless
         </div>
 
     </div>
