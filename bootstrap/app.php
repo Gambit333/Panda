@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
+
+        // Tras el edge de Railway (o Cloudflare), el esquema/host original
+        // llega en cabeceras X-Forwarded-*; confiarlas hace que url(), route()
+        // y la cookie de sesión se generen como https.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
