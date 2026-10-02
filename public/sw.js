@@ -1,4 +1,4 @@
-const VERSION = 'nomina-v1';
+const VERSION = 'nomina-v2';
 const CACHE = VERSION;
 const PRECACHE = [
     '/manifest.webmanifest',
@@ -6,6 +6,7 @@ const PRECACHE = [
     '/icons/icon-192.png',
     '/icons/icon-512.png',
     '/icons/icon-maskable-512.png',
+    '/icons/apple-touch-icon.png',
     '/icons/icon.svg',
     '/favicon.ico',
 ];
