@@ -160,7 +160,6 @@
     .page-btn svg { width: 14px; height: 14px; }
     .page-btn.is-active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
     .page-btn.is-disabled { opacity: .4; border-style: dashed; }
-    .page-btn.is-gap { opacity: .5; border-color: transparent; background: transparent; }
     .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; background: var(--badge-bg); color: var(--primary); }
     .mt-4 { margin-top: 1rem; }
     .mb-4 { margin-bottom: 1rem; }

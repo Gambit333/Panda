@@ -42,7 +42,10 @@ class PaginacionTest extends TestCase
             $response->assertSee('page-btn', false);
             $response->assertSee('is-active', false);
 
-            // Las flechas son SVG pequeños (14px vía CSS), no las de Tailwind.
+            // Entre las flechas solo hay números de página (nada de texto ni puntos).
+            $response->assertDontSee('is-gap', false);
+            $response->assertDontSee('Anterior');
+            $response->assertDontSee('Siguiente');
             $response->assertDontSee('Previous');
             $response->assertDontSee('size-10', false);
             $response->assertDontSee('w-10 h-10', false);
