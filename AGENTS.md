@@ -41,7 +41,7 @@ Nota pooler: puerto **6543 = modo transacción** (conexiones cortas; recomendado
 |---|---|---|---|
 | `roles` | `id_rol` (int) | `rol` varchar | — |
 | `trabajador` | `id_trab` (int) | `nombre`, `apellido`, `telefono?`, `email?`, `direccion?` | `id_rol → roles` |
-| `metodos_pago` | `id_mp` (int) | `metodo_pago`, `impuesto?`, `porcentaje_cuenta?` | — |
+| `metodos_pago` | `id_mp` (int) | `metodo_pago`, `propietario?`, `porcentaje_cuenta?` — **sin `impuesto`** (el impuesto es global 15%; se quitó del modelo, la validación, el formulario y el listado, y con la migración `2026_10_02_120000_drop_impuesto_from_metodos_pago_table`) | — |
 | `cierre_semanal` | `id_cierre` (int) | `fecha_inicio`, `fecha_fin`, `total?` | — |
 | `pago_empleados` | `id_pago` (int) | `monto_bruto`, `monto_neto`, `deuda`, `monto_final`, `nota?` | `id_trab → trabajador`, `id_cierre → cierre_semanal` |
 | `adelantos` | `id_adelanto` (int) | `tipo` (`adelanto`/`prestamo`), `monto`, `fecha`, `nota?` | `id_trab → trabajador` (cascade) |
@@ -75,7 +75,7 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 | `/cierres` | Cierres semanales | index / create / store / show / destroy |
 | `/pagos` | Pagos a empleados | CRUD completo |
 | `/adelantos` | Adelantos y préstamos | CRUD + abonos; solo superroles |
-| `/trabajadores` | Trabajadores | CRUD completo |
+| `/trabajadores` | Trabajadores | CRUD completo; **OJO** el resource usa `->parameters(['trabajadores' => 'trabajador'])`: sin eso Laravel genera `{trabajadore}` (singular de "trabajadores"), no hace model binding implícito, inyecta un modelo vacío y el `delete()` no borra nada (muestra éxito sin cambiar nada). `destroy` además bloquea borrarse a uno mismo y a quien tenga `pago_empleados` o `reporte_pagos` (FKs `ON DELETE RESTRICT` en Supabase) devolviendo `back()->withErrors('trabajador')` |
 | `/metodos` | Métodos de pago | CRUD completo |
 | `/roles` | Roles | CRUD completo |
 
@@ -89,6 +89,7 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
   - `/` (dashboard) → todos (el contenido depende del rol).
 - **Dashboard** (`DashboardController`): para `moderador` muestra sus ganancias reportadas (Σ `reporte_pagos.id_moderador = yo` + Σ `pago_empleados.id_trab = yo`); para `modelo` igual pero con `id_modelo`. Superroles ven el dashboard completo.
 - Sidebar (`layouts/app.blade.php`): moderador ve Dashboard + Reportes; modelo ve solo Dashboard (y Cerrar sesión); los superroles ven además Adelantos y préstamos, Pagos a empleados, Trabajadores, Métodos de pago y Roles.
+- **Errores**: `layouts/app.blade.php` muestra arriba un `.flash success` (session `success`) y un `.flash error` con `$errors->all()`, así que cualquier `back()->withErrors(...)` se ve en la página a la que vuelve (CSS `.flash.error` en `partials/styles.blade.php`).
 - **Paginación**: NO usar el marcado por defecto de Laravel (`pagination::tailwind` deja flechas gigantes y texto "Previous/Next" en inglés porque aquí no hay Tailwind). Existe una vista propia en `resources/views/vendor/pagination/tailwind.blade.php`: `<nav class="page-links">` con flechas SVG de 14px (`aria-label` "Página anterior/siguiente", sin texto visible) y **solo números de página al centro** — todas si son ≤ 7 páginas, o una ventana de 5 alrededor de la actual (`$paginas`); sin puntos suspensivos ni palabras. Botones `.page-btn`, página actual `.is-active`, flechas inactivas `.is-disabled`. Contenedor `.pagination` centrado. Aplica a todas las vistas con `->paginate(15)` (`trabajadores`, `reportes`, `pagos`, `adelantos`, `cierres`; `roles` aún usa `get()`). Tests: `tests/Feature/PaginacionTest.php`.
 - **Responsive**: en ≤ 860px el `.sidebar` pasa a cajón deslizable (botón `#navToggle`, overlay `#navBackdrop`, cierre con `Esc` o al pulsar un enlace) y el `.topbar` es `sticky`. **Toda tabla va envuelta en `<div class="table-wrap">`** (CSS en `partials/styles.blade.php`): el wrapper tiene `overflow-x: auto` y la tabla `min-width: 100%`, así que se adapta al ancho disponible y en celulares (≤ 860px, `white-space: nowrap`) se desliza a la derecha para verse completa sin romper el layout; los formularios pasan a una columna con `font-size: 1rem` (evita el zoom de iOS) y las tarjetas tienen `min-width: 0` para que no desbonden dentro de grids.
 - **Dashboard** (`resources/views/dashboard.blade.php`): “Ingresos por método de pago” es una **tabla** (Método de pago / Ingresos / % del total / Participación con barra) envuelta en `.table-wrap`, igual que “Últimos reportes de pago”, “Últimos cierres semanales” y “Mis ganancias recientes”.

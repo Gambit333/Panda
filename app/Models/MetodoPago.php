@@ -16,14 +16,12 @@ class MetodoPago extends Model
     protected $fillable = [
         'propietario',
         'metodo_pago',
-        'impuesto',
         'porcentaje_cuenta',
     ];
 
     protected function casts(): array
     {
         return [
-            'impuesto' => 'decimal:2',
             'porcentaje_cuenta' => 'decimal:2',
         ];
     }

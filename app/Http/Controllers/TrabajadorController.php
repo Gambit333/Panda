@@ -52,6 +52,33 @@ class TrabajadorController extends Controller
 
     public function destroy(Trabajador $trabajador): RedirectResponse
     {
+        if ($trabajador->id_trab === auth()->id()) {
+            return back()->withErrors(['trabajador' => 'No puedes eliminar tu propio usuario.']);
+        }
+
+        // pago_empleados y reporte_pagos son ON DELETE RESTRICT: si hay historial
+        // de nómina la BD rechaza el borrado, así que se avisa en vez de fallar.
+        $detalles = [];
+
+        $pagos = $trabajador->pagosEmpleado()->count();
+        $reportes = $trabajador->reportesComoModelo()->count() + $trabajador->reportesComoModerador()->count();
+
+        if ($pagos > 0) {
+            $detalles[] = $pagos.' '.($pagos === 1 ? 'pago a empleado' : 'pagos a empleados');
+        }
+
+        if ($reportes > 0) {
+            $detalles[] = $reportes.' '.($reportes === 1 ? 'reporte de pago' : 'reportes de pago');
+        }
+
+        if ($detalles !== []) {
+            return back()->withErrors([
+                'trabajador' => 'No se puede eliminar a '.$trabajador->nombre.' '.$trabajador->apellido
+                    .' porque tiene '.implode(' y ', $detalles).' registrados. '
+                    .'Si solo dejó de trabajar, edita sus datos en lugar de eliminarlo.',
+            ]);
+        }
+
         $trabajador->delete();
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador eliminado correctamente.');

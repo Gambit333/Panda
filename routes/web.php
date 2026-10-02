@@ -35,7 +35,11 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('adelantos', AdelantoController::class)->except(['show']);
         Route::post('adelantos/{adelanto}/abonos', [AbonoAdelantoController::class, 'store'])->name('adelantos.abonos.store');
         Route::delete('adelantos/abonos/{abono}', [AbonoAdelantoController::class, 'destroy'])->name('adelantos.abonos.destroy');
-        Route::resource('trabajadores', TrabajadorController::class)->except(['show']);
+        // Sin esto Laravel genera el parámetro {trabajadore} (singular de "trabajadores"),
+        // no coincide con Trabajador $trabajador y el model binding implícito se pierde.
+        Route::resource('trabajadores', TrabajadorController::class)
+            ->parameters(['trabajadores' => 'trabajador'])
+            ->except(['show']);
         Route::resource('metodos', MetodoPagoController::class)->except(['show']);
         Route::resource('roles', RolController::class)->except(['show']);
     });

@@ -70,6 +70,13 @@
             @if (session('success'))
                 <div class="flash success">{{ session('success') }}</div>
             @endif
+            @if ($errors->any())
+                <div class="flash error">
+                    @foreach ($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
             @yield('content')
         </main>
     </div>

@@ -19,12 +19,6 @@
         </div>
 
         <div class="form-group">
-            <label>Impuesto ($)</label>
-            <input type="number" step="0.01" min="0" name="impuesto" value="{{ old('impuesto', $metodo?->impuesto) }}" placeholder="0.00">
-            @error('impuesto') <div class="text-danger">{{ $message }}</div> @enderror
-        </div>
-
-        <div class="form-group">
             <label>Porcentaje de cuenta (%)</label>
             <input type="number" step="0.01" min="0" max="100" name="porcentaje_cuenta"
                    value="{{ old('porcentaje_cuenta', $metodo?->porcentaje_cuenta) }}" placeholder="0.00">

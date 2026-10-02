@@ -87,6 +87,7 @@
     .content { padding: 1.5rem; flex: 1; }
     .flash { padding: .9rem 1.1rem; border-radius: .5rem; margin-bottom: 1.25rem; font-size: .9rem; border: 1px solid; }
     .flash.success { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+    .flash.error { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
 
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; min-width: 0; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
