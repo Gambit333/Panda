@@ -15,6 +15,7 @@
         }());
     </script>
     @include('partials.styles')
+    @include('partials.pwa')
 </head>
 <body>
 <div class="layout">
@@ -23,7 +24,7 @@
             <span class="dot"></span> Sistema de Nómina
         </div>
         @php $rol = strtolower(Auth::user()->rol?->rol ?? ''); @endphp
-        <a href="{{ route('dashboard') }}" class="{{ active('dashboard') }}">Dashboard</a>
+        <a href="{{ route('dashboard') }}" class="{{ active('dashboard') }}">Inicio</a>
         @if (in_array($rol, ['moderador', 'modelo'], true))
             @if ($rol === 'moderador')
                 <a href="{{ route('reportes.index') }}" class="{{ active('reportes') }}">Reportes de pago</a>
@@ -47,10 +48,18 @@
                         <path d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                <h1>@yield('title', 'Dashboard')</h1>
+                <h1>@yield('title', 'Inicio')</h1>
             </div>
             <div class="topbar-right">
                 <span class="muted user-email" style="font-size: .85rem;">{{ Auth::user()->email }}</span>
+                <button type="button" class="btn btn-secondary btn-sm install-btn" id="installApp" hidden title="Instalar la app en el teléfono">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true">
+                        <path d="M12 3v12" />
+                        <path d="M7 10l5 5 5-5" />
+                        <path d="M5 21h14" />
+                    </svg>
+                    Instalar app
+                </button>
                 <button type="button" class="icon-btn theme-toggle" id="themeToggle" aria-label="Cambiar entre modo claro y oscuro" title="Modo claro / oscuro">
                     <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />

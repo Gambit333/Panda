@@ -126,6 +126,8 @@
     }
     .icon-btn:hover { background: var(--surface-alt); }
     .icon-btn svg { width: 1.15rem; height: 1.15rem; }
+    .install-btn { display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; }
+    .install-btn[hidden] { display: none; }
     .nav-toggle { display: none; flex-shrink: 0; }
     .theme-toggle .icon-sun { display: none; }
     [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
@@ -191,6 +193,7 @@
 
         .topbar { padding: .6rem .75rem; }
         .topbar .user-email { display: none; }
+        .install-btn { font-size: .8rem; padding: .35rem .6rem; }
         .content { padding: 1rem .75rem; }
         .card { padding: 1rem; }
         .cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; }
