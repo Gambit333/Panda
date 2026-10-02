@@ -4,7 +4,11 @@
 
 @section('content')
     <div class="flex-between mb-4">
-        <p class="muted">Registros de pagos recibidos por plataforma, cliente y moderador asignado.</p>
+        <p class="muted">
+            {{ $soloMios
+                ? 'Aquí ves únicamente los reportes de pago que tú registraste.'
+                : 'Registros de pagos recibidos por plataforma, cliente y moderador asignado.' }}
+        </p>
         <a href="{{ route('reportes.create') }}" class="btn btn-primary">+ Nuevo reporte</a>
     </div>
 
@@ -20,7 +24,9 @@
                         <th>Precio</th>
                         <th>Servicio</th>
                         <th>Fecha</th>
-                        <th>Moderador</th>
+                        @unless ($soloMios)
+                            <th>Moderador</th>
+                        @endunless
                         <th>Cierre</th>
                         <th>Comp.</th>
                         <th></th>
@@ -50,7 +56,9 @@
                                 @endif
                             </td>
                             <td>{{ $reporte->fecha_reporte?->format('d/m/Y') ?? '-' }}</td>
-                            <td>{{ $reporte->moderador?->nombre_completo ?? '-' }}</td>
+                            @unless ($soloMios)
+                                <td>{{ $reporte->moderador?->nombre_completo ?? '-' }}</td>
+                            @endunless
                             <td>
                                 @if ($reporte->cierreSemanal)
                                     <span class="badge">#{{ $reporte->cierreSemanal->id_cierre }}</span>
@@ -80,7 +88,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="11" class="empty">No hay reportes registrados.</td></tr>
+                        <tr><td colspan="{{ $soloMios ? 10 : 11 }}" class="empty">No hay reportes registrados.</td></tr>
                     @endforelse
                 </tbody>
 

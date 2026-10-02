@@ -16,19 +16,25 @@ class ReportePagoController extends Controller
 {
     public function index(): View
     {
-        $reportes = ReportePago::with(['modelo', 'moderador', 'metodoPago', 'cierreSemanal'])
-            ->orderByDesc('fecha_reporte')
-            ->paginate(15);
+        $usuario = auth()->user();
+        $soloMios = ! $usuario->esSuperRol();
 
-        return view('reportes.index', compact('reportes'));
+        $query = ReportePago::with(['modelo', 'moderador', 'metodoPago', 'cierreSemanal']);
+
+        // Un moderador solo ve los reportes que él registró.
+        if ($soloMios) {
+            $query->where('id_moderador', $usuario->getAuthIdentifier());
+        }
+
+        $reportes = $query->orderByDesc('fecha_reporte')->paginate(15);
+
+        return view('reportes.index', compact('reportes', 'soloMios'));
     }
 
     public function create()
     {
         $usuarioActual = auth()->user();
-
-        // Asumiendo id_rol 1 = CEO, 3 = Admin
-        $esAdmin = in_array($usuarioActual->id_rol, [1, 3]);
+        $esAdmin = $usuarioActual->esSuperRol();
 
         $metodosPago = MetodoPago::all();
 
@@ -48,6 +54,11 @@ class ReportePagoController extends Controller
     {
         $data = $this->validateData($request);
 
+        if (! auth()->user()->esSuperRol()) {
+            // El moderador siempre queda como moderador del reporte.
+            $data['id_moderador'] = auth()->user()->getAuthIdentifier();
+        }
+
         if ($request->hasFile('comprobante')) {
             $data['comprobante'] = $this->guardarComprobante($request->file('comprobante'));
         }
@@ -57,8 +68,12 @@ class ReportePagoController extends Controller
         return redirect()->route('reportes.index')->with('success', 'Reporte de pago creado correctamente.');
     }
 
-    public function edit(ReportePago $reporte): View
+    public function edit(ReportePago $reporte): View|RedirectResponse
     {
+        if ($redirigir = $this->sinAcceso($reporte)) {
+            return $redirigir;
+        }
+
         $modelos = $this->trabajadoresPorRol(['modelo', 'ceo']);
 
         if (! $modelos->contains('id_trab', $reporte->id_modelo) && $reporte->modelo) {
@@ -74,7 +89,15 @@ class ReportePagoController extends Controller
 
     public function update(Request $request, ReportePago $reporte): RedirectResponse
     {
+        if ($redirigir = $this->sinAcceso($reporte)) {
+            return $redirigir;
+        }
+
         $data = $this->validateData($request);
+
+        if (! auth()->user()->esSuperRol()) {
+            $data['id_moderador'] = $reporte->id_moderador;
+        }
 
         if ($request->hasFile('comprobante')) {
             $this->eliminarComprobante($reporte);
@@ -91,10 +114,28 @@ class ReportePagoController extends Controller
 
     public function destroy(ReportePago $reporte): RedirectResponse
     {
+        if ($redirigir = $this->sinAcceso($reporte)) {
+            return $redirigir;
+        }
+
         $this->eliminarComprobante($reporte);
         $reporte->delete();
 
         return redirect()->route('reportes.index')->with('success', 'Reporte de pago eliminado correctamente.');
+    }
+
+    /**
+     * Un moderador solo puede ver y modificar los reportes que él registró.
+     * Los superroles (admin, ceo, support) acceden a todos.
+     */
+    private function sinAcceso(ReportePago $reporte): ?RedirectResponse
+    {
+        if (auth()->user()->esSuperRol() || (int) $reporte->id_moderador === (int) auth()->user()->getAuthIdentifier()) {
+            return null;
+        }
+
+        return redirect()->route('reportes.index')
+            ->withErrors(['access' => 'Ese reporte pertenece a otro moderador.']);
     }
 
     private function trabajadoresPorRol(array $roles)

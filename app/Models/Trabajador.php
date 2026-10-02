@@ -12,6 +12,9 @@ class Trabajador extends Model implements AuthenticatableContract
 {
     use Authenticatable;
 
+    /** Roles con acceso a todos los módulos y a todos los reportes. */
+    public const SUPER_ROLES = ['admin', 'ceo', 'support'];
+
     protected $table = 'trabajador';
 
     protected $primaryKey = 'id_trab';
@@ -84,5 +87,11 @@ class Trabajador extends Model implements AuthenticatableContract
     public function getNombreCompletoAttribute(): string
     {
         return trim($this->nombre.' '.$this->apellido);
+    }
+
+    /** Admin, CEO y support: ven y editan todo, incluidos los reportes de otros moderadores. */
+    public function esSuperRol(): bool
+    {
+        return in_array(strtolower((string) ($this->rol?->rol ?? '')), self::SUPER_ROLES, true);
     }
 }

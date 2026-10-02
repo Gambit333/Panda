@@ -1,5 +1,6 @@
 @php
     $pago ??= null;
+    $saldos ??= [];
 @endphp
 <form method="POST" action="{{ $pago ? route('pagos.update', $pago) : route('pagos.store') }}">
     @csrf
@@ -48,6 +49,21 @@
             <label>Deuda / Descuento ($)</label>
             <input type="number" step="0.01" min="0" name="deuda" id="deuda" value="{{ old('deuda', $pago?->deuda ?? 0) }}" placeholder="0.00">
             @error('deuda') <div class="text-danger">{{ $message }}</div> @enderror
+            <div class="muted" id="avisoAdelantos" style="font-size:.78rem; margin-top:.35rem;">
+                @if ($saldos)
+                    Al elegir el trabajador se llena con su saldo pendiente de adelantos.
+                @else
+                    Este trabajador no tiene adelantos ni préstamos pendientes.
+                @endif
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="usarSaldoAdelantos" style="display: none; margin-top: .5rem;">
+                Usar saldo de adelantos
+            </button>
+            <label style="display:flex; align-items:center; gap:.4rem; margin-top:.5rem; font-weight:400; font-size:.8rem;">
+                <input type="checkbox" name="aplicar_adelantos" value="1" id="aplicarAdelantos"
+                       @checked(old('aplicar_adelantos', $pago ? 1 : 1)) style="width:auto;">
+                Registrar el descuento como abono en Adelantos y préstamos
+            </label>
         </div>
 
         <div class="form-group">
@@ -71,9 +87,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const workerSelect = document.querySelector('select[name="id_trab"]');
     const netInput = document.getElementById('monto_neto');
     const debtInput = document.getElementById('deuda');
     const finalInput = document.getElementById('monto_final');
+    const aviso = document.getElementById('avisoAdelantos');
+    const usarSaldo = document.getElementById('usarSaldoAdelantos');
+    const saldos = @json($saldos);
 
     function calculateFinal() {
         const neto = parseFloat(netInput.value) || 0;
@@ -81,7 +101,41 @@ document.addEventListener('DOMContentLoaded', function () {
         finalInput.value = (neto - deuda).toFixed(2);
     }
 
+    function saldoDe(trabajador) {
+        return parseFloat(saldos[String(trabajador)] || 0).toFixed(2);
+    }
+
+    function mostrarSaldo() {
+        const saldo = saldoDe(workerSelect.value);
+
+        if (!workerSelect.value) {
+            aviso.textContent = 'Selecciona un trabajador para ver su saldo de adelantos.';
+            usarSaldo.style.display = 'none';
+            return;
+        }
+
+        if (saldo > 0) {
+            aviso.textContent = 'Saldo pendiente de adelantos y préstamos: $' + saldo;
+            usarSaldo.style.display = 'inline-flex';
+        } else {
+            aviso.textContent = 'Este trabajador no tiene adelantos ni préstamos pendientes.';
+            usarSaldo.style.display = 'none';
+        }
+
+        debtInput.value = saldo > 0 ? saldo : debtInput.value;
+        calculateFinal();
+    }
+
+    workerSelect.addEventListener('change', mostrarSaldo);
+
+    usarSaldo.addEventListener('click', function () {
+        debtInput.value = saldoDe(workerSelect.value);
+        calculateFinal();
+    });
+
     netInput.addEventListener('input', calculateFinal);
     debtInput.addEventListener('input', calculateFinal);
+
+    calculateFinal();
 });
 </script>

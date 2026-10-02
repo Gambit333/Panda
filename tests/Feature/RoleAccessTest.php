@@ -25,6 +25,8 @@ class RoleAccessTest extends TestCase
 
         $this->get('/cierres')->assertRedirect('/');
         $this->get('/pagos')->assertRedirect('/');
+        $this->get('/adelantos')->assertRedirect('/');
+        $this->get('/adelantos/create')->assertRedirect('/');
         $this->get('/trabajadores')->assertRedirect('/');
         $this->get('/metodos')->assertRedirect('/');
         $this->get('/roles')->assertRedirect('/');
@@ -39,6 +41,7 @@ class RoleAccessTest extends TestCase
         $this->get('/reportes')->assertRedirect('/');
         $this->get('/cierres')->assertRedirect('/');
         $this->get('/pagos')->assertRedirect('/');
+        $this->get('/adelantos')->assertRedirect('/');
     }
 
     public function test_admin_keeps_full_access(): void
@@ -49,6 +52,8 @@ class RoleAccessTest extends TestCase
         $this->get('/reportes')->assertOk();
         $this->get('/cierres')->assertOk();
         $this->get('/pagos')->assertOk();
+        $this->get('/adelantos')->assertOk();
+        $this->get('/adelantos/create')->assertOk();
         $this->get('/trabajadores')->assertOk();
         $this->get('/metodos')->assertOk();
         $this->get('/roles')->assertOk();

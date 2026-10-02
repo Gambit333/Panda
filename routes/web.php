@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AbonoAdelantoController;
+use App\Http\Controllers\AdelantoController;
 use App\Http\Controllers\CierreSemanalController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
@@ -30,6 +32,9 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('role')->group(function (): void {
         Route::resource('cierres', CierreSemanalController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
         Route::resource('pagos', PagoEmpleadoController::class)->except(['show']);
+        Route::resource('adelantos', AdelantoController::class)->except(['show']);
+        Route::post('adelantos/{adelanto}/abonos', [AbonoAdelantoController::class, 'store'])->name('adelantos.abonos.store');
+        Route::delete('adelantos/abonos/{abono}', [AbonoAdelantoController::class, 'destroy'])->name('adelantos.abonos.destroy');
         Route::resource('trabajadores', TrabajadorController::class)->except(['show']);
         Route::resource('metodos', MetodoPagoController::class)->except(['show']);
         Route::resource('roles', RolController::class)->except(['show']);

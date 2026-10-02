@@ -141,9 +141,26 @@
         outline: 2px solid var(--primary); outline-offset: -1px; border-color: transparent;
     }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .input-sm {
+        width: 110px; padding: .35rem .5rem; border: 1px solid var(--border); border-radius: .5rem;
+        background: var(--input-bg); color: var(--ink); font-size: .8rem; font-family: inherit;
+    }
+    .input-sm:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: transparent; }
     .text-danger { color: var(--danger); font-size: .78rem; margin-top: .25rem; }
     .empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; }
-    .pagination { display: flex; justify-content: flex-end; padding-top: 1rem; font-size: .875rem; flex-wrap: wrap; gap: .25rem; }
+    .pagination { display: flex; align-items: center; justify-content: center; padding-top: 1rem; flex-wrap: wrap; }
+    .page-links { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .25rem; }
+    .page-btn {
+        display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+        min-width: 1.85rem; height: 1.85rem; padding: 0 .45rem; border-radius: .5rem;
+        border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+        font-size: .82rem; font-weight: 600; text-decoration: none;
+    }
+    .page-btn:hover { background: var(--surface-alt); }
+    .page-btn svg { width: 14px; height: 14px; }
+    .page-btn.is-active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+    .page-btn.is-disabled { opacity: .4; border-style: dashed; }
+    .page-btn.is-gap { opacity: .5; border-color: transparent; background: transparent; }
     .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; background: var(--badge-bg); color: var(--primary); }
     .mt-4 { margin-top: 1rem; }
     .mb-4 { margin-bottom: 1rem; }
@@ -187,8 +204,9 @@
         th, td { padding: .5rem .6rem; }
 
         .form-group input, .form-group select, .form-group textarea { font-size: 1rem; }
+        .input-sm { font-size: 1rem; }
         .actions, .flex-between { flex-wrap: wrap; }
-        .pagination { justify-content: center; }
+        .page-btn { min-width: 2.1rem; height: 2.1rem; font-size: .9rem; }
     }
 
     @media (max-width: 420px) {

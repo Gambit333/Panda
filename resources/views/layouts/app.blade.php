@@ -32,6 +32,7 @@
             <a href="{{ route('reportes.index') }}" class="{{ active('reportes') }}">Reportes de pago</a>
             <a href="{{ route('cierres.index') }}" class="{{ active('cierres') }}">Cierres semanales</a>
             <a href="{{ route('pagos.index') }}" class="{{ active('pagos') }}">Pagos a empleados</a>
+            <a href="{{ route('adelantos.index') }}" class="{{ active('adelantos') }}">Adelantos y préstamos</a>
             <a href="{{ route('trabajadores.index') }}" class="{{ active('trabajadores') }}">Trabajadores</a>
             <a href="{{ route('metodos.index') }}" class="{{ active('metodos') }}">Métodos de pago</a>
             <a href="{{ route('roles.index') }}" class="{{ active('roles') }}">Roles</a>

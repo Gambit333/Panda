@@ -14,7 +14,7 @@ return new class extends Migration
             $table->unsignedInteger('id_cierre');
             $table->decimal('monto_bruto', 12, 2)->default(0.00);
             $table->decimal('monto_neto', 12, 2)->default(0.00);
-            $table->decimal('deuda_descontada', 12, 2)->default(0.00);
+            $table->decimal('deuda', 12, 2)->default(0.00);
             $table->decimal('monto_final', 12, 2)->default(0.00);
             $table->string('nota')->nullable();
             $table->timestamps();

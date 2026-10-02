@@ -8,8 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureRole
 {
-    private const SUPER_ROLES = ['admin', 'ceo', 'support'];
-
     public function handle(Request $request, Closure $next, string ...$extraRoles): Response
     {
         $user = $request->user();
@@ -19,12 +17,13 @@ class EnsureRole
         }
 
         $rol = strtolower((string) ($user->rol?->rol ?? ''));
+        $permitidos = array_map('strtolower', $extraRoles);
 
-        if (! in_array($rol, array_merge(self::SUPER_ROLES, $extraRoles), true)) {
-            return redirect()->route('dashboard')
-                ->withErrors(['access' => 'No tienes permiso para acceder a este módulo.']);
+        if ($user->esSuperRol() || in_array($rol, $permitidos, true)) {
+            return $next($request);
         }
 
-        return $next($request);
+        return redirect()->route('dashboard')
+            ->withErrors(['access' => 'No tienes permiso para acceder a este módulo.']);
     }
 }

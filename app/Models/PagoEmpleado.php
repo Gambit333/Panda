@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PagoEmpleado extends Model
 {
@@ -18,7 +19,7 @@ class PagoEmpleado extends Model
         'id_cierre',
         'monto_bruto',
         'monto_neto',
-        'deuda_descontada',
+        'deuda',
         'monto_final',
         'nota',
     ];
@@ -28,7 +29,7 @@ class PagoEmpleado extends Model
         return [
             'monto_bruto' => 'decimal:2',
             'monto_neto' => 'decimal:2',
-            'deuda_descontada' => 'decimal:2',
+            'deuda' => 'decimal:2',
             'monto_final' => 'decimal:2',
         ];
     }
@@ -41,5 +42,11 @@ class PagoEmpleado extends Model
     public function cierreSemanal(): BelongsTo
     {
         return $this->belongsTo(CierreSemanal::class, 'id_cierre');
+    }
+
+    /** Abonos de adelantos generados al descontar la deuda de este pago. */
+    public function abonosAdelanto(): HasMany
+    {
+        return $this->hasMany(AbonoAdelanto::class, 'id_pago');
     }
 }
