@@ -97,6 +97,22 @@
     .stat .stat-note { color: var(--muted); font-size: .78rem; margin-top: .3rem; }
     .stat-destacado { grid-column: 1 / -1; border-color: var(--primary); background: var(--surface-alt); padding: 1.4rem 1.5rem; }
     .stat-destacado .value { font-size: 2.75rem; line-height: 1.1; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .ranking { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+    .ranking li {
+        display: flex; align-items: center; gap: .6rem; padding: .5rem .65rem;
+        border: 1px solid var(--border); border-radius: .5rem;
+    }
+    .ranking li.empty { justify-content: center; color: var(--muted); border-style: dashed; }
+    .ranking .rank {
+        flex: 0 0 1.35rem; height: 1.35rem; display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50%; background: var(--surface-alt); color: var(--muted);
+        font-size: .75rem; font-weight: 700;
+    }
+    .ranking li:first-child .rank { background: var(--primary); color: #fff; }
+    .ranking .who { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ranking .amount { font-weight: 700; }
+    .ranking .small { font-size: .75rem; white-space: nowrap; }
 
     table { width: 100%; border-collapse: collapse; font-size: .875rem; }
     th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); }
@@ -204,6 +220,9 @@
         .stat .value { font-size: 1.25rem; }
         .stat-destacado { padding: 1.1rem 1.2rem; }
         .stat-destacado .value { font-size: 2.1rem; }
+        .grid-2 { grid-template-columns: 1fr; gap: 1rem; }
+        .ranking li { flex-wrap: wrap; }
+        .ranking .who { flex: 1 1 100%; order: -1; }
         .form-grid { grid-template-columns: 1fr; }
 
         /* Tablas: se adaptan al ancho disponible y se scrollean a la derecha si no caben */

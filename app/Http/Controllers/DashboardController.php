@@ -6,6 +6,7 @@ use App\Models\CierreSemanal;
 use App\Models\PagoEmpleado;
 use App\Models\ReportePago;
 use App\Models\Trabajador;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -54,8 +55,41 @@ class DashboardController extends Controller
             'modoEmpleado' => null,
             'stats' => $stats,
             'ingresosPorMetodo' => $ingresosPorMetodo,
+            'topModelos' => $this->ranking('id_modelo'),
+            'topModeradores' => $this->ranking('id_moderador'),
             'ultimosReportes' => $ultimosReportes,
             'ultimosCierres' => $ultimosCierres,
+        ]);
+    }
+
+    /**
+     * Top 5 de los reportes de pago SIN cerrar (id_cierre NULL) agrupados por la
+     * columna indicada (id_modelo / id_moderador).
+     *
+     * @return Collection<int, array{nombre: string, total: float, reportes: int}>
+     */
+    private function ranking(string $columna): Collection
+    {
+        $filas = DB::table('reporte_pagos')
+            ->whereNull('id_cierre')
+            ->select([
+                $columna.' as trabajador_id',
+                DB::raw('SUM(precio) as total'),
+                DB::raw('COUNT(*) as reportes'),
+            ])
+            ->groupBy($columna)
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $nombres = Trabajador::whereIn('id_trab', $filas->pluck('trabajador_id'))
+            ->get()
+            ->keyBy('id_trab');
+
+        return $filas->map(fn ($fila) => [
+            'nombre' => $nombres->get($fila->trabajador_id)?->nombre_completo ?? 'Trabajador #'.$fila->trabajador_id,
+            'total' => (float) $fila->total,
+            'reportes' => (int) $fila->reportes,
         ]);
     }
 

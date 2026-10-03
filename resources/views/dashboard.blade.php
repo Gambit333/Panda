@@ -119,6 +119,47 @@
                 </div>
             </div>
 
+            {{-- Ranking de modelos y moderadores (solo reportes sin cerrar) --}}
+            <div class="grid-2">
+                <div class="card">
+                    <div class="flex-between mb-4">
+                        <h2 style="font-size:1rem;">Modelos que más venden</h2>
+                        <span class="badge">Sin cerrar</span>
+                    </div>
+                    <ol class="ranking">
+                        @forelse ($topModelos as $item)
+                            <li>
+                                <span class="rank">{{ $loop->iteration }}</span>
+                                <span class="who">{{ $item['nombre'] }}</span>
+                                <span class="amount positive">${{ number_format($item['total'], 2) }}</span>
+                                <span class="muted small">{{ $item['reportes'] }} {{ $item['reportes'] === 1 ? 'reporte' : 'reportes' }}</span>
+                            </li>
+                        @empty
+                            <li class="empty">No hay reportes pendientes de cerrar.</li>
+                        @endforelse
+                    </ol>
+                </div>
+
+                <div class="card">
+                    <div class="flex-between mb-4">
+                        <h2 style="font-size:1rem;">Moderadores que más venden</h2>
+                        <span class="badge">Sin cerrar</span>
+                    </div>
+                    <ol class="ranking">
+                        @forelse ($topModeradores as $item)
+                            <li>
+                                <span class="rank">{{ $loop->iteration }}</span>
+                                <span class="who">{{ $item['nombre'] }}</span>
+                                <span class="amount positive">${{ number_format($item['total'], 2) }}</span>
+                                <span class="muted small">{{ $item['reportes'] }} {{ $item['reportes'] === 1 ? 'reporte' : 'reportes' }}</span>
+                            </li>
+                        @empty
+                            <li class="empty">No hay reportes pendientes de cerrar.</li>
+                        @endforelse
+                    </ol>
+                </div>
+            </div>
+
             {{-- Últimos Reportes --}}
             <div class="card">
                 <div class="flex-between mb-4">
