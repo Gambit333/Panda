@@ -51,6 +51,8 @@ class PwaTest extends TestCase
         $this->assertIsArray($manifiesto);
         $this->assertSame('standalone', $manifiesto['display']);
         $this->assertSame('/', $manifiesto['start_url']);
+        $this->assertSame('Panda', $manifiesto['name']);
+        $this->assertSame('Panda', $manifiesto['short_name']);
 
         $tamanos = array_column($manifiesto['icons'], 'sizes');
         $this->assertContains('192x192', $tamanos);

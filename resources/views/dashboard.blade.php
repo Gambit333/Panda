@@ -59,6 +59,11 @@
     @else
         {{-- VISTA MODO ADMINISTRADOR --}}
         <div class="cards">
+            <div class="stat stat-destacado">
+                <div class="label">Ingresos sin cerrar</div>
+                <div class="value positive">${{ number_format($stats['ingresos'] ?? 0, 2) }}</div>
+                <div class="stat-note">{{ number_format($stats['reportes_sin_cierre'] ?? 0) }} {{ ($stats['reportes_sin_cierre'] ?? 0) === 1 ? 'reporte pendiente' : 'reportes pendientes' }} de cerrar</div>
+            </div>
             <div class="stat">
                 <div class="label">Trabajadores</div>
                 <div class="value">{{ number_format($stats['trabajadores'] ?? 0) }}</div>
@@ -66,10 +71,6 @@
             <div class="stat">
                 <div class="label">Reportes de pago</div>
                 <div class="value">{{ number_format($stats['reportes'] ?? 0) }}</div>
-            </div>
-            <div class="stat">
-                <div class="label">Ingresos totales</div>
-                <div class="value positive">${{ number_format($stats['ingresos'] ?? 0, 2) }}</div>
             </div>
             <div class="stat">
                 <div class="label">Cierres semanales</div>
@@ -82,10 +83,10 @@
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr; gap:1.5rem;">
-            {{-- Ingresos por Método de Pago --}}
+            {{-- Ingresos sin cerrar por Método de Pago (solo reportes con id_cierre NULL) --}}
             <div class="card">
                 <div class="flex-between mb-4">
-                    <h2 style="font-size:1rem;">Ingresos por método de pago</h2>
+                    <h2 style="font-size:1rem;">Ingresos sin cerrar por método de pago</h2>
                 </div>
                 @php $max = $ingresosPorMetodo->max('total') ?: 1; $totalMetodos = $ingresosPorMetodo->sum('total') ?: 1; @endphp
                 <div class="table-wrap">
@@ -111,7 +112,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="empty">Sin ingresos registrados todavía.</td></tr>
+                                <tr><td colspan="4" class="empty">No hay ingresos pendientes de cerrar.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

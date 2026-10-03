@@ -23,13 +23,17 @@ class DashboardController extends Controller
         $stats = [
             'trabajadores' => Trabajador::count(),
             'reportes' => ReportePago::count(),
-            'ingresos' => ReportePago::sum('precio'),
+            // Solo lo que todavía no tiene cierre asignado (id_cierre NULL).
+            'ingresos' => ReportePago::whereNull('id_cierre')->sum('precio'),
+            'reportes_sin_cierre' => ReportePago::whereNull('id_cierre')->count(),
             'cierres' => CierreSemanal::count(),
             'pagos_empleados' => PagoEmpleado::sum('monto_final'),
         ];
 
+        // Solo ingresos pendientes de cerrar (id_cierre NULL), igual que la tarjeta "Ingresos sin cerrar".
         $ingresosPorMetodo = DB::table('reporte_pagos')
             ->join('metodos_pago', 'reporte_pagos.id_mp', '=', 'metodos_pago.id_mp')
+            ->whereNull('reporte_pagos.id_cierre')
             ->select(
                 'metodos_pago.propietario',
                 'metodos_pago.metodo_pago',

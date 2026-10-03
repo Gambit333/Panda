@@ -1,4 +1,4 @@
-const VERSION = 'nomina-v2';
+const VERSION = 'nomina-v4';
 const CACHE = VERSION;
 const PRECACHE = [
     '/manifest.webmanifest',

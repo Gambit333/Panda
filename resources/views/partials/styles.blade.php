@@ -94,6 +94,9 @@
     .stat { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.1rem 1.25rem; }
     .stat .label { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
     .stat .value { font-size: 1.5rem; font-weight: 700; margin-top: .25rem; }
+    .stat .stat-note { color: var(--muted); font-size: .78rem; margin-top: .3rem; }
+    .stat-destacado { grid-column: 1 / -1; border-color: var(--primary); background: var(--surface-alt); padding: 1.4rem 1.5rem; }
+    .stat-destacado .value { font-size: 2.75rem; line-height: 1.1; }
 
     table { width: 100%; border-collapse: collapse; font-size: .875rem; }
     th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); }
@@ -199,6 +202,8 @@
         .cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; }
         .stat { padding: .9rem 1rem; }
         .stat .value { font-size: 1.25rem; }
+        .stat-destacado { padding: 1.1rem 1.2rem; }
+        .stat-destacado .value { font-size: 2.1rem; }
         .form-grid { grid-template-columns: 1fr; }
 
         /* Tablas: se adaptan al ancho disponible y se scrollean a la derecha si no caben */
