@@ -88,6 +88,9 @@
     .flash { padding: .9rem 1.1rem; border-radius: .5rem; margin-bottom: 1.25rem; font-size: .9rem; border: 1px solid; }
     .flash.success { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
     .flash.error { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+.flash.info { background: var(--badge-bg); color: var(--primary); border-color: rgba(124, 58, 237, .25); }
+.badge.bloqueado { background: var(--danger-bg); color: var(--danger); }
+.badge.ok { background: var(--success-bg); color: var(--success); }
 
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; min-width: 0; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }

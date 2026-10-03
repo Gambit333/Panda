@@ -84,6 +84,35 @@ class TrabajadorController extends Controller
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador eliminado correctamente.');
     }
 
+    /**
+     * Elimina la contraseña de una cuenta (solo programadores, middleware
+     * 'programador'). El usuario podrá crear una nueva en su próximo ingreso,
+     * porque la pantalla de primer ingreso aparece cuando `password` está vacío.
+     */
+    public function eliminarPassword(Trabajador $trabajador): RedirectResponse
+    {
+        $tenia = $trabajador->tienePassword();
+
+        $trabajador->password = null;
+        // desbloquear() guarda el cambio y limpia el bloqueo por intentos.
+        $trabajador->desbloquear();
+
+        $nombre = $trabajador->nombre.' '.$trabajador->apellido;
+
+        return redirect()->route('trabajadores.index')->with('success', $tenia
+            ? 'Contraseña de '.$nombre.' eliminada: podrá crear una nueva en su próximo ingreso.'
+            : $nombre.' no tenía contraseña. Su cuenta quedó desbloqueada (0 intentos fallidos).');
+    }
+
+    /** Quita el bloqueo por intentos fallidos (solo programadores). */
+    public function desbloquear(Trabajador $trabajador): RedirectResponse
+    {
+        $trabajador->desbloquear();
+
+        return redirect()->route('trabajadores.index')
+            ->with('success', $trabajador->nombre.' '.$trabajador->apellido.' quedó desbloqueado (0 intentos fallidos).');
+    }
+
     private function validateData(Request $request, ?int $id = null): array
     {
         return $request->validate([

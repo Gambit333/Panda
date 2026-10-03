@@ -42,12 +42,13 @@ class LoginController extends Controller
         return view('auth.password', [
             'trabajador' => $trabajador,
             'createsPassword' => $this->debeCrearPassword($trabajador),
+            'intentosRestantes' => $this->intentosRestantes($trabajador),
         ]);
     }
 
     /**
-     * "Olvidé mi contraseña": pasa el login al modo de crear contraseña
-     * (misma pantalla del primer ingreso) sin necesidad de código por correo.
+     * "Olvidé mi contraseña": ya no se puede recuperar por email, solo un
+     * programador puede cambiarla desde la sección de trabajadores.
      */
     public function recuperarPassword(Request $request): RedirectResponse
     {
@@ -55,32 +56,53 @@ class LoginController extends Controller
             return redirect()->route('login');
         }
 
-        $request->session()->put('crear_password', true);
-
-        return redirect()->route('login.password');
+        return back()->with('info', 'Para cambiar tu contraseña contacta a un programador, '
+            .'que lo puede hacer por ti desde la sección de Trabajadores.');
     }
 
     public function submitPassword(Request $request): RedirectResponse
     {
         $trabajador = $this->pendingTrabajador();
 
+        // Si el bloqueo ya venció, se limpia solo para dejar entrar.
+        if ($trabajador->bloqueado && ! $trabajador->estaBloqueado()) {
+            $trabajador->limpiarIntentos();
+        }
+
+        if ($trabajador->estaBloqueado()) {
+            return redirect()->route('login.password')->withErrors([
+                'password' => 'Cuenta bloqueada por intentos fallidos. Vuelve a intentar en '
+                    .$trabajador->minutosRestantesBloqueo().' minuto(s) o contacta a un programador para que te la cambie.',
+            ]);
+        }
+
         if ($this->debeCrearPassword($trabajador)) {
             $data = $request->validate([
                 'password' => ['required', 'string', 'min:6', 'confirmed'],
             ]);
 
-            $trabajador->password = Hash::make($data['password']);
-            $trabajador->save();
+            $trabajador->password = $data['password'];
+            $trabajador->limpiarIntentos();
         } else {
             $data = $request->validate([
                 'password' => ['required', 'string'],
             ]);
 
             if (! Hash::check($data['password'], $trabajador->password)) {
-                return back()->withErrors([
-                    'password' => 'La contraseña ingresada no es correcta.',
-                ])->withInput();
+                $trabajador->registrarIntentoFallido();
+
+                $restantes = $this->intentosRestantes($trabajador);
+
+                return redirect()->route('login.password')->withErrors([
+                    'password' => $trabajador->estaBloqueado()
+                        ? 'Cuenta bloqueada por '.Trabajador::MAX_INTENTOS.' intentos fallidos. '
+                            .'Contacta a un programador para que te la cambie o te desbloquee.'
+                        : 'La contraseña ingresada no es correcta. Te '.($restantes === 1 ? 'queda' : 'quedan')
+                            .' '.$restantes.' '.($restantes === 1 ? 'intento' : 'intentos').'.',
+                ]);
             }
+
+            $trabajador->limpiarIntentos();
         }
 
         session()->forget(['auth_email', 'crear_password']);
@@ -107,7 +129,13 @@ class LoginController extends Controller
 
     private function debeCrearPassword(Trabajador $trabajador): bool
     {
-        return blank($trabajador->password) || session()->get('crear_password') === true;
+        return blank($trabajador->password);
+    }
+
+    /** Intentos que le quedan antes del bloqueo. */
+    private function intentosRestantes(Trabajador $trabajador): int
+    {
+        return max(0, Trabajador::MAX_INTENTOS - (int) $trabajador->intentos_fallidos);
     }
 
     private function pendingTrabajador(): Trabajador

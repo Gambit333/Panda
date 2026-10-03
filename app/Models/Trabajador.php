@@ -34,6 +34,9 @@ class Trabajador extends Model implements AuthenticatableContract
         'direccion',
         'id_rol',
         'password',
+        'intentos_fallidos',
+        'bloqueado',
+        'bloqueado_hasta',
     ];
 
     protected $hidden = [
@@ -65,8 +68,20 @@ class Trabajador extends Model implements AuthenticatableContract
     {
         return [
             'password' => 'hashed',
+            'bloqueado' => 'boolean',
+            'bloqueado_hasta' => 'datetime',
+            'intentos_fallidos' => 'integer',
         ];
     }
+
+    /** Intentos fallidos antes de bloquear la cuenta. */
+    public const MAX_INTENTOS = 6;
+
+    /** Minutos que dura el bloqueo automático (un programador puede limpiarlo antes). */
+    public const MINUTOS_BLOQUEO = 15;
+
+    /** Solo el rol programador puede cambiar contraseñas y desbloquear usuarios. */
+    public const ROLES_GESTORES = ['programador'];
 
     public function rol(): BelongsTo
     {
@@ -112,5 +127,64 @@ class Trabajador extends Model implements AuthenticatableContract
     public function puede(string $modulo): bool
     {
         return in_array($modulo, $this->modulosPermitidos(), true);
+    }
+
+    /** Programadores: únicos autorizados a cambiar contraseñas y desbloquear cuentas. */
+    public function esProgramador(): bool
+    {
+        return in_array(strtolower((string) ($this->rol?->rol ?? '')), self::ROLES_GESTORES, true);
+    }
+
+    public function estaBloqueado(): bool
+    {
+        if (! $this->bloqueado) {
+            return false;
+        }
+
+        // El bloqueo expira solo: pasado el plazo la cuenta vuelve a estar disponible.
+        return $this->bloqueado_hasta === null || $this->bloqueado_hasta->isFuture();
+    }
+
+    public function minutosRestantesBloqueo(): int
+    {
+        if (! $this->estaBloqueado() || $this->bloqueado_hasta === null) {
+            return 0;
+        }
+
+        return max(1, (int) ceil(now()->diffInMinutes($this->bloqueado_hasta, false)));
+    }
+
+    /** Registra un fallo; al llegar al máximo bloquea la cuenta. */
+    public function registrarIntentoFallido(): void
+    {
+        $this->intentos_fallidos = (int) $this->intentos_fallidos + 1;
+
+        if ($this->intentos_fallidos >= self::MAX_INTENTOS) {
+            $this->bloqueado = true;
+            $this->bloqueado_hasta = now()->addMinutes(self::MINUTOS_BLOQUEO);
+        }
+
+        $this->save();
+    }
+
+    /** Ingreso correcto: se limpia el contador y cualquier bloqueo. */
+    public function limpiarIntentos(): void
+    {
+        $this->intentos_fallidos = 0;
+        $this->bloqueado = false;
+        $this->bloqueado_hasta = null;
+
+        $this->save();
+    }
+
+    /** Desbloqueo manual hecho por un programador. */
+    public function desbloquear(): void
+    {
+        $this->limpiarIntentos();
+    }
+
+    public function tienePassword(): bool
+    {
+        return filled($this->password);
     }
 }

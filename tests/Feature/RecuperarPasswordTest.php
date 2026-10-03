@@ -8,11 +8,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
+/**
+ * El "¿Olvidaste tu contraseña?" ya no recupera nada: avisa que hay que
+ * contactar a un programador. Solo quien tiene el rol programador puede
+ * cambiar contraseñas (ver BloqueoIntentosTest).
+ */
 class RecuperarPasswordTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_se_puede_crear_una_contrasena_nueva_desde_la_pantalla_de_password(): void
+    public function test_olvide_mi_contrasena_muestra_el_mensaje_de_contactar_al_programador(): void
     {
         $trabajador = $this->trabajador();
 
@@ -23,28 +28,16 @@ class RecuperarPasswordTest extends TestCase
             ->assertSee('Hola, Lucia')
             ->assertSee('¿Olvidaste tu contraseña?');
 
-        $this->post('/login/recuperar')->assertRedirect('/login/password');
+        $this->post('/login/recuperar')
+            ->assertRedirect()
+            ->assertSessionHas('info');
 
         $this->get('/login/password')
             ->assertOk()
-            ->assertSee('Crea tu contraseña')
-            ->assertSee('Repite la contraseña')
-            ->assertDontSee('¿Olvidaste tu contraseña?');
-
-        $this->post('/login/password', [
-            'password' => 'nuevaclaw123',
-            'password_confirmation' => 'nuevaclaw123',
-        ])->assertRedirect('/');
-
-        $this->assertAuthenticated();
-        $this->assertTrue(Hash::check('nuevaclaw123', $trabajador->fresh()->password));
-
-        $this->post('/logout');
-        $this->post('/login', ['email' => $trabajador->email]);
-        $this->post('/login/password', ['password' => 'nuevaclaw123'])->assertRedirect('/');
+            ->assertSee('contacta a un programador');
     }
 
-    public function test_la_creacion_exige_confirmar_la_contrasena(): void
+    public function test_olvide_mi_contrasena_no_permite_cambiar_la_clave(): void
     {
         $trabajador = $this->trabajador();
 
@@ -53,11 +46,50 @@ class RecuperarPasswordTest extends TestCase
 
         $this->post('/login/password', [
             'password' => 'nuevaclaw123',
-            'password_confirmation' => 'otra-distinta',
+            'password_confirmation' => 'nuevaclaw123',
         ])->assertSessionHasErrors('password');
 
         $this->assertGuest();
         $this->assertTrue(Hash::check('claveoriginal1', $trabajador->fresh()->password));
+    }
+
+    public function test_quien_no_tiene_contrasena_sigue_creando_una_en_su_primer_ingreso(): void
+    {
+        $trabajador = $this->trabajador(password: null);
+
+        $this->post('/login', ['email' => $trabajador->email]);
+
+        $this->get('/login/password')
+            ->assertOk()
+            ->assertSee('Crea tu contraseña')
+            ->assertSee('Repite la contraseña');
+
+        $this->post('/login/password', [
+            'password' => 'primera1234',
+            'password_confirmation' => 'primera1234',
+        ])->assertRedirect('/');
+
+        $this->assertAuthenticated();
+        $this->assertTrue(Hash::check('primera1234', (string) $trabajador->fresh()->password));
+
+        $this->post('/logout');
+        $this->post('/login', ['email' => $trabajador->email]);
+        $this->post('/login/password', ['password' => 'primera1234'])->assertRedirect('/');
+    }
+
+    public function test_la_creacion_exige_confirmar_la_contrasena(): void
+    {
+        $trabajador = $this->trabajador(password: null);
+
+        $this->post('/login', ['email' => $trabajador->email]);
+
+        $this->post('/login/password', [
+            'password' => 'primera1234',
+            'password_confirmation' => 'otra-distinta',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+        $this->assertEmpty($trabajador->fresh()->password);
     }
 
     public function test_el_enlace_no_sirve_sin_un_email_en_sesion(): void
@@ -77,14 +109,14 @@ class RecuperarPasswordTest extends TestCase
         $this->assertTrue(Hash::check('claveoriginal1', $trabajador->fresh()->password));
     }
 
-    private function trabajador(): Trabajador
+    private function trabajador(?string $password = 'claveoriginal1'): Trabajador
     {
         $rol = Rol::create(['rol' => 'modelo']);
 
         return Trabajador::create([
             'nombre' => 'Lucia', 'apellido' => 'Rios', 'email' => 'lucia@nomina.test',
             'id_rol' => $rol->id_rol,
-            'password' => Hash::make('claveoriginal1'),
+            'password' => $password ? Hash::make($password) : null,
         ]);
     }
 }

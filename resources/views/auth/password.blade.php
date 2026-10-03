@@ -26,18 +26,34 @@
             </div>
 
             @if ($createsPassword)
-                @if (session('crear_password'))
-                    <h1 class="text-2xl font-bold tracking-tight text-white">Crea tu contraseña</h1>
-                    <p class="text-xs text-zinc-400 mt-1">Escribe una contraseña nueva para tu cuenta, {{ $trabajador->nombre }}.</p>
-                @else
-                    <h1 class="text-2xl font-bold tracking-tight text-white">Bienvenido, {{ $trabajador->nombre }}</h1>
-                    <p class="text-xs text-zinc-400 mt-1">Tu cuenta no tiene contraseña todavía. Crea una para poder iniciar sesión.</p>
-                @endif
+                <h1 class="text-2xl font-bold tracking-tight text-white">Crea tu contraseña</h1>
+                <p class="text-xs text-zinc-400 mt-1">Escribe una contraseña nueva para tu cuenta, {{ $trabajador->nombre }}. Es tu primer ingreso.</p>
             @else
                 <h1 class="text-2xl font-bold tracking-tight text-white">Hola, {{ $trabajador->nombre }}</h1>
                 <p class="text-xs text-zinc-400 mt-1">Ingresa la contraseña de tu cuenta.</p>
             @endif
         </div>
+
+        @if (session('info'))
+            <div class="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+                {{ session('info') }}
+            </div>
+        @endif
+
+        @if ($trabajador->estaBloqueado())
+            <div class="mb-5 rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
+                <p class="font-semibold">Cuenta bloqueada por {{ App\Models\Trabajador::MAX_INTENTOS }} intentos fallidos.</p>
+                <p class="mt-1">
+                    Vuelve a intentar en {{ $trabajador->minutosRestantesBloqueo() }} minuto(s) o
+                    contacta a un programador para que te la cambie o te desbloquee.
+                </p>
+            </div>
+        @elseif (! $createsPassword && $intentosRestantes < App\Models\Trabajador::MAX_INTENTOS)
+            <p class="mb-4 text-center text-[11px] text-amber-300/80">
+                Te {{ $intentosRestantes === 1 ? 'queda' : 'quedan' }} {{ $intentosRestantes }}
+                {{ $intentosRestantes === 1 ? 'intento' : 'intentos' }} antes de que la cuenta se bloquee.
+            </p>
+        @endif
 
         <form method="POST" action="{{ route('login.password.submit') }}" class="space-y-4">
             @csrf
@@ -103,8 +119,7 @@
                         ¿Olvidaste tu contraseña?
                     </button>
                 </form>
-            @endunless
-        </div>
+            @endunless        </div>
 
     </div>
 

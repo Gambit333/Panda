@@ -59,6 +59,15 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('trabajadores', TrabajadorController::class)
             ->parameters(['trabajadores' => 'trabajador'])
             ->except(['show']);
+
+        // Gestión de cuentas: solo programadores.
+        Route::middleware('programador')->group(function (): void {
+            // Quita la contraseña: el usuario la vuelve a crear en su próximo ingreso.
+            Route::post('trabajadores/{trabajador}/eliminar-password', [TrabajadorController::class, 'eliminarPassword'])
+                ->name('trabajadores.password.eliminar');
+            Route::post('trabajadores/{trabajador}/desbloquear', [TrabajadorController::class, 'desbloquear'])
+                ->name('trabajadores.desbloquear');
+        });
     });
 
     Route::middleware('role:metodos')->group(function (): void {
