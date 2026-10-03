@@ -169,6 +169,26 @@
     }
     .input-sm:focus { outline: 2px solid var(--primary); outline-offset: -1px; border-color: transparent; }
     .text-danger { color: var(--danger); font-size: .78rem; margin-top: .25rem; }
+    .text-muted { color: var(--muted); }
+    .small { font-size: .82rem; }
+    .is-hidden { display: none !important; }
+    .permisos-list {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: .5rem; margin-top: .5rem;
+    }
+    .permisos-list .permiso-item {
+        display: flex; align-items: center; gap: .5rem; margin-bottom: 0; padding: .5rem .6rem;
+        border: 1px solid var(--border); border-radius: .5rem; background: var(--input-bg);
+        font-size: .85rem; font-weight: 500; cursor: pointer;
+    }
+    .form-group .permisos-list .permiso-item input {
+        width: auto; flex-shrink: 0; margin: 0; accent-color: var(--primary);
+    }
+    .permisos-aviso {
+        margin-top: .6rem; padding: .5rem .7rem; border-radius: .5rem;
+        background: rgba(124, 58, 237, .1); color: var(--primary);
+        font-size: .8rem; font-weight: 600;
+    }
     .empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; }
     .pagination { display: flex; align-items: center; justify-content: center; padding-top: 1rem; flex-wrap: wrap; }
     .page-links { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .25rem; }

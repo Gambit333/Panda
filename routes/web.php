@@ -25,22 +25,43 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::middleware('role:moderador')->group(function (): void {
+    // Cada módulo pide su clave de permiso: role:reportes, role:cierres, ...
+    Route::middleware('role:reportes')->group(function (): void {
         Route::resource('reportes', ReportePagoController::class)->except(['show']);
     });
 
-    Route::middleware('role')->group(function (): void {
-        Route::resource('cierres', CierreSemanalController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::middleware('role:cierres')->group(function (): void {
+        Route::resource('cierres', CierreSemanalController::class)
+            ->only(['index', 'create', 'store', 'show', 'destroy']);
+    });
+
+    Route::middleware('role:pagos')->group(function (): void {
         Route::resource('pagos', PagoEmpleadoController::class)->except(['show']);
+    });
+
+    Route::middleware('role:adelantos')->group(function (): void {
         Route::resource('adelantos', AdelantoController::class)->except(['show']);
         Route::post('adelantos/{adelanto}/abonos', [AbonoAdelantoController::class, 'store'])->name('adelantos.abonos.store');
         Route::delete('adelantos/abonos/{abono}', [AbonoAdelantoController::class, 'destroy'])->name('adelantos.abonos.destroy');
-        // Sin esto Laravel genera el parámetro {trabajadore} (singular de "trabajadores"),
-        // no coincide con Trabajador $trabajador y el model binding implícito se pierde.
+    });
+
+    Route::middleware('role:roles')->group(function (): void {
+        // El singular de "roles" es "role" pero el controlador usa Rol $rol:
+        // sin esto no hay model binding y editar/actualizar/borrar un rol no hace nada.
+        Route::resource('roles', RolController::class)
+            ->parameters(['roles' => 'rol'])
+            ->except(['show']);
+    });
+
+    Route::middleware('role:trabajadores')->group(function (): void {
+        // El singular de "trabajadores" es "trabajadore", no "trabajador": sin
+        // parameters() el binding se pierde y editar/eliminar no hacen nada.
         Route::resource('trabajadores', TrabajadorController::class)
             ->parameters(['trabajadores' => 'trabajador'])
             ->except(['show']);
+    });
+
+    Route::middleware('role:metodos')->group(function (): void {
         Route::resource('metodos', MetodoPagoController::class)->except(['show']);
-        Route::resource('roles', RolController::class)->except(['show']);
     });
 });

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Permisos;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Model;
@@ -12,8 +13,11 @@ class Trabajador extends Model implements AuthenticatableContract
 {
     use Authenticatable;
 
-    /** Roles con acceso a todos los módulos y a todos los reportes. */
-    public const SUPER_ROLES = ['admin', 'ceo', 'support'];
+    /** Roles que solo ven su parte: el resto entra a todo (o a lo que tenga guardado). */
+    public const ROLES_RESTRINGIDOS = Permisos::ROLES_RESTRINGIDOS;
+
+    /** Roles con acceso a todo garantizado (admin y programador no se pueden restringir). */
+    public const SUPER_ROLES = ['admin', 'ceo', 'support', 'programador'];
 
     protected $table = 'trabajador';
 
@@ -89,9 +93,24 @@ class Trabajador extends Model implements AuthenticatableContract
         return trim($this->nombre.' '.$this->apellido);
     }
 
-    /** Admin, CEO y support: ven y editan todo, incluidos los reportes de otros moderadores. */
+    /**
+     * Acceso total: se puede entrar a todos los módulos y ver todos los reportes.
+     * Lo tienen los roles sin permisos guardados salvo modelo/moderador, y los que
+     * tengan guardada la lista completa de módulos (admin y programador siempre).
+     */
     public function esSuperRol(): bool
     {
-        return in_array(strtolower((string) ($this->rol?->rol ?? '')), self::SUPER_ROLES, true);
+        return $this->rol !== null && count($this->modulosPermitidos()) === count(Permisos::MODULOS);
+    }
+
+    /** @return array<int, string> */
+    public function modulosPermitidos(): array
+    {
+        return Permisos::modulosDe($this->rol?->rol, $this->rol?->permisos);
+    }
+
+    public function puede(string $modulo): bool
+    {
+        return in_array($modulo, $this->modulosPermitidos(), true);
     }
 }

@@ -23,19 +23,29 @@
         <div class="brand">
             <span class="dot"></span> Sistema de Nómina
         </div>
-        @php $rol = strtolower(Auth::user()->rol?->rol ?? ''); @endphp
+        @php
+            $modulosPermitidos = Auth::user()->modulosPermitidos();
+        @endphp
         <a href="{{ route('dashboard') }}" class="{{ active('dashboard') }}">Inicio</a>
-        @if (in_array($rol, ['moderador', 'modelo'], true))
-            @if ($rol === 'moderador')
-                <a href="{{ route('reportes.index') }}" class="{{ active('reportes') }}">Reportes de pago</a>
-            @endif
-        @else
+        @if (in_array('reportes', $modulosPermitidos, true))
             <a href="{{ route('reportes.index') }}" class="{{ active('reportes') }}">Reportes de pago</a>
+        @endif
+        @if (in_array('cierres', $modulosPermitidos, true))
             <a href="{{ route('cierres.index') }}" class="{{ active('cierres') }}">Cierres semanales</a>
+        @endif
+        @if (in_array('pagos', $modulosPermitidos, true))
             <a href="{{ route('pagos.index') }}" class="{{ active('pagos') }}">Pagos a empleados</a>
+        @endif
+        @if (in_array('adelantos', $modulosPermitidos, true))
             <a href="{{ route('adelantos.index') }}" class="{{ active('adelantos') }}">Adelantos y préstamos</a>
+        @endif
+        @if (in_array('trabajadores', $modulosPermitidos, true))
             <a href="{{ route('trabajadores.index') }}" class="{{ active('trabajadores') }}">Trabajadores</a>
+        @endif
+        @if (in_array('metodos', $modulosPermitidos, true))
             <a href="{{ route('metodos.index') }}" class="{{ active('metodos') }}">Métodos de pago</a>
+        @endif
+        @if (in_array('roles', $modulosPermitidos, true))
             <a href="{{ route('roles.index') }}" class="{{ active('roles') }}">Roles</a>
         @endif
     </aside>
@@ -146,5 +156,6 @@
         });
     }());
 </script>
+@stack('scripts')
 </body>
 </html>

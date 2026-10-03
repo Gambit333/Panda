@@ -16,16 +16,34 @@
                         <th>ID</th>
                         <th>Rol</th>
                         <th>Trabajadores asignados</th>
+                        <th>Secciones permitidas</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($roles as $rol)
+                        @php
+                            $modulos = $rol->modulos();
+                            $bloqueado = $rol->permisosBloqueados();
+                        @endphp
                         <tr>
                             <td>#{{ $rol->id_rol }}</td>
                             <td><strong>{{ $rol->rol }}</strong></td>
                             <td>
                                 <span class="badge">{{ $rol->trabajadores_count }} {{ Str::plural('trabajador', $rol->trabajadores_count) }}</span>
+                            </td>
+                            <td>
+                                @if ($bloqueado)
+                                    <span class="badge">Todas (no se editan)</span>
+                                @elseif (count($modulos) === count(App\Support\Permisos::MODULOS))
+                                    <span class="badge">Todas</span>
+                                @elseif ($modulos === [])
+                                    <span class="badge">Solo el inicio</span>
+                                @else
+                                    @foreach ($modulos as $modulo)
+                                        <span class="badge">{{ App\Support\Permisos::MODULOS[$modulo] }}</span>
+                                    @endforeach
+                                @endif
                             </td>
                             <td>
                                 <div class="actions">
@@ -40,7 +58,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="empty">No hay roles registrados.</td></tr>
+                        <tr><td colspan="5" class="empty">No hay roles registrados.</td></tr>
                     @endforelse
                 </tbody>
 

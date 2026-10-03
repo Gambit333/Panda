@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rol;
+use App\Support\Permisos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -38,7 +39,7 @@ class RolController extends Controller
 
     public function update(Request $request, Rol $rol): RedirectResponse
     {
-        $data = $this->validateData($request, $rol->id_rol);
+        $data = $this->validateData($request, $rol);
 
         $rol->update($data);
 
@@ -52,10 +53,33 @@ class RolController extends Controller
         return redirect()->route('roles.index')->with('success', 'Rol eliminado correctamente.');
     }
 
-    private function validateData(Request $request, ?int $id = null): array
+    private function validateData(Request $request, ?Rol $rol = null): array
     {
-        return $request->validate([
-            'rol' => ['required', 'string', 'max:255', Rule::unique('roles', 'rol')->ignore($id, 'id_rol')],
+        $data = $request->validate([
+            'rol' => ['required', 'string', 'max:255', Rule::unique('roles', 'rol')->ignore($rol?->id_rol, 'id_rol')],
+            'permisos' => ['nullable', 'array'],
+            // El primer elemento es el campo oculto que permite dejar la lista vacía
+            // (Laravel lo convierte a null y nullable lo deja pasar).
+            'permisos.*' => ['nullable', 'string', Rule::in(Permisos::todos())],
         ]);
+
+        // admin y programador siempre entran a todo: sus permisos no se pueden editar.
+        if (Permisos::esBloqueado($data['rol'])) {
+            $data['permisos'] = null;
+
+            return $data;
+        }
+
+        // Sin el campo (formulario antiguo) se deja el valor actual: el rol usará
+        // su acceso por defecto si nunca se han guardado permisos.
+        if (! array_key_exists('permisos', $data)) {
+            $data['permisos'] = $rol?->permisos;
+
+            return $data;
+        }
+
+        $data['permisos'] = array_values(array_intersect(Permisos::todos(), (array) $data['permisos']));
+
+        return $data;
     }
 }

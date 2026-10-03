@@ -17,8 +17,10 @@ class DashboardController extends Controller
         $user = Auth::user();
         $rol = strtolower((string) ($user->rol?->rol ?? ''));
 
-        if (in_array($rol, ['moderador', 'modelo'], true)) {
-            return $this->workerDashboard($user, $rol);
+        // Solo quien tiene acceso a todos los módulos ve el tablero completo;
+        // los demás ven su resumen de ganancias.
+        if (! $user->esSuperRol()) {
+            return $this->workerDashboard($user, in_array($rol, ['modelo'], true) ? 'modelo' : 'moderador');
         }
 
         $stats = [

@@ -2,13 +2,18 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Permisos;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureRole
 {
-    public function handle(Request $request, Closure $next, string ...$extraRoles): Response
+    /**
+     * Comprueba el acceso a un módulo: `role:reportes`, `role:cierres`, ...
+     * Sin argumentos exige el acceso a todos los módulos.
+     */
+    public function handle(Request $request, Closure $next, string ...$modulos): Response
     {
         $user = $request->user();
 
@@ -16,11 +21,12 @@ class EnsureRole
             return redirect()->route('login');
         }
 
-        $rol = strtolower((string) ($user->rol?->rol ?? ''));
-        $permitidos = array_map('strtolower', $extraRoles);
+        $pedidos = $modulos === [] ? Permisos::todos() : $modulos;
 
-        if ($user->esSuperRol() || in_array($rol, $permitidos, true)) {
-            return $next($request);
+        foreach ($pedidos as $modulo) {
+            if ($user->puede($modulo)) {
+                return $next($request);
+            }
         }
 
         return redirect()->route('dashboard')
