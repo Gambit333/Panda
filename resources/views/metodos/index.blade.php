@@ -16,6 +16,7 @@
                         <th>ID</th>
                         <th>Método de pago</th>
                         <th>Propietario / Titular</th>
+                        <th>Dueño con acceso</th>
                         <th>% Cuenta</th>
                         <th>Reportes</th>
                         <th></th>
@@ -27,6 +28,14 @@
                             <td>#{{ $metodo->id_mp }}</td>
                             <td><strong>{{ $metodo->metodo_pago }}</strong></td>
                             <td>{{ $metodo->propietario ?? '-' }}</td>
+                            <td>
+                                @if ($metodo->dueno)
+                                    <span class="badge">{{ $metodo->dueno->nombre_completo }}</span>
+                                    <br><small class="muted">rol propietario</small>
+                                @else
+                                    <span class="muted">-</span>
+                                @endif
+                            </td>
                             <td>{{ $metodo->porcentaje_cuenta !== null ? $metodo->porcentaje_cuenta.'%' : '-' }}</td>
                             <td>{{ $metodo->reportes_count }}</td>
                             <td>
@@ -42,7 +51,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="empty">No hay métodos de pago registrados.</td></tr>
+                        <tr><td colspan="7" class="empty">No hay métodos de pago registrados.</td></tr>
                     @endforelse
                 </tbody>
 

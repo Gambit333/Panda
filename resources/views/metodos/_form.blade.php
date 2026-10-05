@@ -1,5 +1,7 @@
 @php
     $metodo ??= null;
+    $propietarios ??= collect();
+    $duenoActual = old('id_propietario', $metodo?->id_propietario);
 @endphp
 <form method="POST" action="{{ $metodo ? route('metodos.update', $metodo) : route('metodos.store') }}">
     @csrf
@@ -16,6 +18,20 @@
             <label>Propietario / Titular</label>
             <input type="text" name="propietario" value="{{ old('propietario', $metodo?->propietario) }}" placeholder="Ej. Juan Pérez / Cta Principal">
             @error('propietario') <div class="text-danger">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="form-group">
+            <label>Dueño de la cuenta</label>
+            <select name="id_propietario">
+                <option value="">— Sin dueño (no aparece en el inicio de nadie) —</option>
+                @foreach ($propietarios as $opcion)
+                    <option value="{{ $opcion->id_trab }}" @selected((string) $duenoActual === (string) $opcion->id_trab)>
+                        {{ $opcion->nombre_completo }} (id {{ $opcion->id_trab }})
+                    </option>
+                @endforeach
+            </select>
+            <small class="muted">Solo trabajadores con rol <strong>propietario</strong>: al entrar verán en el inicio solo los ingresos de este método.</small>
+            @error('id_propietario') <div class="text-danger">{{ $message }}</div> @enderror
         </div>
 
         <div class="form-group">

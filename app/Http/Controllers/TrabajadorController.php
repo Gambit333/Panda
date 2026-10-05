@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MetodoPago;
 use App\Models\Rol;
 use App\Models\Trabajador;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -21,15 +23,18 @@ class TrabajadorController extends Controller
     public function create(): View
     {
         $roles = Rol::all();
+        $metodosSinDueno = $this->metodosSinDueno();
 
-        return view('trabajadores.create', compact('roles'));
+        return view('trabajadores.create', compact('roles', 'metodosSinDueno'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateData($request);
 
-        Trabajador::create($data);
+        $trabajador = Trabajador::create($data);
+
+        $this->sincronizarMetodos($trabajador, $request->input('metodos_pago', []));
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador creado correctamente.');
     }
@@ -37,8 +42,10 @@ class TrabajadorController extends Controller
     public function edit(Trabajador $trabajador): View
     {
         $roles = Rol::all();
+        $metodosSinDueno = $this->metodosSinDueno();
+        $metodosAsignados = $this->metodosAsignados($trabajador);
 
-        return view('trabajadores.edit', compact('trabajador', 'roles'));
+        return view('trabajadores.edit', compact('trabajador', 'roles', 'metodosSinDueno', 'metodosAsignados'));
     }
 
     public function update(Request $request, Trabajador $trabajador): RedirectResponse
@@ -46,6 +53,8 @@ class TrabajadorController extends Controller
         $data = $this->validateData($request, $trabajador->id_trab);
 
         $trabajador->update($data);
+
+        $this->sincronizarMetodos($trabajador, $request->input('metodos_pago', []));
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador actualizado correctamente.');
     }
@@ -123,5 +132,44 @@ class TrabajadorController extends Controller
             'direccion' => ['nullable', 'string'],
             'id_rol' => ['required', 'integer', 'exists:roles,id_rol'],
         ]);
+    }
+
+    private function metodosSinDueno(): Collection
+    {
+        return MetodoPago::query()
+            ->whereNull('id_propietario')
+            ->orderBy('metodo_pago')
+            ->get();
+    }
+
+    private function metodosAsignados(Trabajador $trabajador): Collection
+    {
+        return MetodoPago::query()
+            ->where('id_propietario', $trabajador->id_trab)
+            ->orderBy('metodo_pago')
+            ->get();
+    }
+
+    private function sincronizarMetodos(Trabajador $trabajador, array $seleccionados): void
+    {
+        $rol = strtolower((string) ($trabajador->rol?->rol ?? ''));
+        $seleccionados = collect($seleccionados)->filter()->map(fn ($id) => (int) $id)->all();
+
+        if ($rol !== 'propietario') {
+            MetodoPago::where('id_propietario', $trabajador->id_trab)
+                ->update(['id_propietario' => null]);
+
+            return;
+        }
+
+        MetodoPago::where('id_propietario', $trabajador->id_trab)
+            ->update(['id_propietario' => null]);
+
+        if ($seleccionados === []) {
+            return;
+        }
+
+        MetodoPago::whereIn('id_mp', $seleccionados)
+            ->update(['id_propietario' => $trabajador->id_trab]);
     }
 }

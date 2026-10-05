@@ -3,7 +3,95 @@
 @section('title', 'Inicio')
 
 @section('content')
-    @if ($modoEmpleado)
+    @if (isset($modoPropietario) && $modoPropietario)
+        {{-- VISTA MODO PROPIETARIO (dueños de métodos de pago) --}}
+
+        <div class="cards">
+            <div class="stat stat-destacado">
+                <div class="label">Ingresos de mis métodos de pago</div>
+                <div class="value positive">${{ number_format($stats['ingresos'] ?? 0, 2) }}</div>
+                <div class="stat-note">{{ number_format($stats['reportes'] ?? 0) }} {{ ($stats['reportes'] ?? 0) === 1 ? 'reporte' : 'reportes' }} · {{ $modoPropietario['periodo'] }}</div>
+                @if (($stats['ganancia_propietario'] ?? 0) != 0)
+                    <div class="stat-note mt-2">Ganancia estimada para ti: <strong class="positive">${{ number_format($stats['ganancia_propietario'], 2) }}</strong></div>
+                @endif
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex-between mb-4">
+                <h2 style="font-size:1rem;">Ingresos por método de pago</h2>
+                <span class="badge">{{ $modoPropietario['periodo'] }}</span>
+            </div>
+            @php $max = $ingresosPorMetodo->max('total') ?: 1; $totalMetodos = $ingresosPorMetodo->sum('total') ?: 1; @endphp
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Método de pago</th>
+                            <th>Titular</th>
+                            <th>Reportes</th>
+                            <th>Ingresos</th>
+                            <th>% del total</th>
+                            <th>Participación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($ingresosPorMetodo as $item)
+                            <tr>
+                                <td><strong>{{ $item['metodo_pago'] }}</strong></td>
+                                <td class="muted">{{ $item['propietario'] ?? '-' }}</td>
+                                <td>{{ $item['reportes'] }}</td>
+                                <td class="positive"><strong>${{ number_format($item['total'], 2) }}</strong></td>
+                                <td>{{ number_format(($item['total'] / $totalMetodos) * 100, 1) }}%</td>
+                                <td style="min-width: 140px;">
+                                    <span style="display: block; background: var(--border); border-radius: 999px; height: 8px; overflow: hidden;">
+                                        <span style="display: block; width: {{ ($item['total'] / $max) * 100 }}%; background: var(--primary); height: 8px; border-radius: 999px;"></span>
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="empty">No tienes métodos de pago asignados. Pídele a un administrador que te asigne uno.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex-between mb-4">
+                <h2 style="font-size:1rem;">Ingresos registrados</h2>
+                <span class="badge">{{ $modoPropietario['periodo'] }}</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Plataforma</th>
+                            <th>Cliente</th>
+                            <th>Servicio</th>
+                            <th>Método de pago</th>
+                            <th>Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($reportes as $reporte)
+                            <tr>
+                                <td>{{ $reporte->fecha_reporte?->format('d/m/Y') ?? '-' }}</td>
+                                <td><strong>{{ $reporte->plataforma }}</strong></td>
+                                <td class="muted">{{ $reporte->user_cliente }}</td>
+                                <td>{{ Str::limit($reporte->servicio, 30) }}</td>
+                                <td>{{ $reporte->metodoPago?->metodo_pago ?? '-' }}</td>
+                                <td class="positive"><strong>${{ number_format($reporte->precio, 2) }}</strong></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="empty">Todavía no hay ingresos registrados en tus métodos de pago.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @elseif ($modoEmpleado)
         {{-- VISTA MODO EMPLEADO (Moderador / Modelo) --}}
         <div class="cards">
             <div class="stat">

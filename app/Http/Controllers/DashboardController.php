@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CierreSemanal;
+use App\Models\MetodoPago;
 use App\Models\PagoEmpleado;
 use App\Models\ReportePago;
 use App\Models\Trabajador;
@@ -20,6 +21,10 @@ class DashboardController extends Controller
         // Solo quien tiene acceso a todos los módulos ve el tablero completo;
         // los demás ven su resumen de ganancias.
         if (! $user->esSuperRol()) {
+            if ($rol === 'propietario') {
+                return $this->propietarioDashboard($user);
+            }
+
             return $this->workerDashboard($user, in_array($rol, ['modelo'], true) ? 'modelo' : 'moderador');
         }
 
@@ -55,6 +60,7 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'modoEmpleado' => null,
+            'modoPropietario' => null,
             'stats' => $stats,
             'ingresosPorMetodo' => $ingresosPorMetodo,
             'topModelos' => $this->ranking('id_modelo'),
@@ -113,6 +119,79 @@ class DashboardController extends Controller
             'modoEmpleado' => $rol,
             'stats' => $stats,
             'reportes' => $reportes,
+        ]);
+    }
+
+    /**
+     * Inicio de los dueños de métodos de pago (rol `propietario`).
+     *
+     * Solo ve los ingresos de los métodos que tiene asignados: primero los
+     * reportes SIN cierre (id_cierre NULL) y, si ya no queda ninguno, los del
+     * último cierre en el que aparecen sus métodos. Además, sus propias
+     * ganancias (pagos liquidados + lo que haya reportado como modelo/moderador).
+     */
+    private function propietarioDashboard(Trabajador $user)
+    {
+        $metodos = MetodoPago::where('id_propietario', $user->id_trab)->orderBy('metodo_pago')->get();
+        $ids = $metodos->pluck('id_mp');
+
+        $base = ReportePago::query()->whereIn('id_mp', $ids)->with('metodoPago');
+
+        $haySinCerrar = (clone $base)->whereNull('id_cierre')->exists();
+
+        if ($haySinCerrar) {
+            $reportes = (clone $base)->whereNull('id_cierre');
+            $periodo = 'Reportes sin cerrar';
+            $cierre = null;
+        } else {
+            $ultimoCierre = (clone $base)->whereNotNull('id_cierre')->max('id_cierre');
+
+            if ($ultimoCierre) {
+                $reportes = (clone $base)->where('id_cierre', $ultimoCierre);
+                $cierre = CierreSemanal::find($ultimoCierre);
+                $periodo = 'Último cierre #'.$ultimoCierre;
+                if ($cierre) {
+                    $periodo .= ' ('.$cierre->fecha_inicio->format('d/m/Y').' - '.$cierre->fecha_fin->format('d/m/Y').')';
+                }
+            } else {
+                $reportes = (clone $base);
+                $periodo = 'Todos sus reportes';
+                $cierre = null;
+            }
+        }
+
+        $reportesColeccion = $reportes->with('metodoPago')->latest('fecha_reporte')->get();
+
+        $ingresosPorMetodo = $metodos->map(fn (MetodoPago $metodo) => [
+            'metodo_pago' => $metodo->metodo_pago,
+            'propietario' => $metodo->propietario,
+            'total' => (float) $reportesColeccion->where('id_mp', $metodo->id_mp)->sum('precio'),
+            'reportes' => $reportesColeccion->where('id_mp', $metodo->id_mp)->count(),
+            'porcentaje_cuenta' => $metodo->porcentaje_cuenta !== null ? (float) $metodo->porcentaje_cuenta : 0.0,
+        ])->sortByDesc('total')->values();
+
+        $gananciaPropietario = $ingresosPorMetodo->sum(function ($item) {
+            $total = (float) ($item['total'] ?? 0);
+            $pct = (float) ($item['porcentaje_cuenta'] ?? 0);
+
+            return $total * ($pct / 100);
+        });
+
+        $stats = [
+            'ingresos' => (float) $reportesColeccion->sum('precio'),
+            'reportes' => $reportesColeccion->count(),
+            'ganancia_propietario' => $gananciaPropietario,
+        ];
+
+        return view('dashboard', [
+            'modoEmpleado' => null,
+            'modoPropietario' => [
+                'periodo' => $periodo,
+                'metodos' => $metodos,
+            ],
+            'stats' => $stats,
+            'ingresosPorMetodo' => $ingresosPorMetodo,
+            'reportes' => $reportesColeccion->take(10),
         ]);
     }
 }

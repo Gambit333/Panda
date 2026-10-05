@@ -8,8 +8,9 @@ namespace App\Support;
  * Reglas:
  * - `admin` y `programador` siempre tienen acceso a todo y sus permisos NO se pueden editar.
  * - Un rol con `permisos` guardados (array, aunque esté vacía) usa esa lista tal cual.
- * - Un rol sin `permisos` guardados (null) entra a todo, salvo `modelo` (nada) y
- *   `moderador` (solo reportes), para no dejar a nadie fuera por un rol mal escrito.
+ * - Un rol sin `permisos` guardados (null) entra a todo, salvo `modelo` (nada),
+ *   `moderador` (solo reportes) y `propietario` (nada, ve solo el inicio con los
+ *   ingresos de sus métodos de pago), para no dejar a nadie fuera por un rol mal escrito.
  */
 class Permisos
 {
@@ -28,12 +29,14 @@ class Permisos
     public const ROLES_BLOQUEADOS = ['admin', 'programador'];
 
     /** Roles con acceso restringido aunque no tengan permisos guardados. */
-    public const ROLES_RESTRINGIDOS = ['modelo', 'moderador'];
+    public const ROLES_RESTRINGIDOS = ['modelo', 'moderador', 'propietario'];
 
     /** Permisos por defecto de los roles restringidos. */
     public const POR_DEFECTO = [
         'modelo' => [],
         'moderador' => ['reportes'],
+        // Dueños de métodos de pago: solo el inicio, con sus propios ingresos.
+        'propietario' => [],
     ];
 
     /**
