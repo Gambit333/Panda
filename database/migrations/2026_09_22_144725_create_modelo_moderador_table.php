@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create('modelo_moderador', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_moderador');
-            $table->unsignedBigInteger('id_modelo');
+            $table->unsignedInteger('id_moderador');
+            $table->unsignedInteger('id_modelo');
             $table->timestamps();
 
-            // Claves foráneas hacia la tabla trabajador
+            // Claves forÃ¡neas hacia la tabla trabajador
             $table->foreign('id_moderador')->references('id_trab')->on('trabajador')->onDelete('cascade');
             $table->foreign('id_modelo')->references('id_trab')->on('trabajador')->onDelete('cascade');
 

@@ -168,9 +168,9 @@ class PropietarioMetodosTest extends TestCase
 
         $this->actingAs($dueno)->get('/')
             ->assertOk()
-            ->assertSee('Monto liquidado')
-            ->assertSee('40.00')
-            ->assertDontSee('500.00');
+            ->assertSee('100.00')
+            ->assertDontSee('500.00')
+            ->assertDontSee('Monto liquidado');
     }
 
     public function test_sin_metodos_asignados_muestra_el_aviso(): void

@@ -8,6 +8,7 @@ use App\Models\Trabajador;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -24,8 +25,9 @@ class TrabajadorController extends Controller
     {
         $roles = Rol::all();
         $metodosSinDueno = $this->metodosSinDueno();
+        $modelos = $this->modelosDisponibles();
 
-        return view('trabajadores.create', compact('roles', 'metodosSinDueno'));
+        return view('trabajadores.create', compact('roles', 'metodosSinDueno', 'modelos'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -35,6 +37,7 @@ class TrabajadorController extends Controller
         $trabajador = Trabajador::create($data);
 
         $this->sincronizarMetodos($trabajador, $request->input('metodos_pago', []));
+        $this->sincronizarModelosModerador($trabajador, $request->input('modelos_moderador', []));
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador creado correctamente.');
     }
@@ -44,8 +47,10 @@ class TrabajadorController extends Controller
         $roles = Rol::all();
         $metodosSinDueno = $this->metodosSinDueno();
         $metodosAsignados = $this->metodosAsignados($trabajador);
+        $modelos = $this->modelosDisponibles();
+        $modelosAsignados = $trabajador->modelosAsignadas()->get();
 
-        return view('trabajadores.edit', compact('trabajador', 'roles', 'metodosSinDueno', 'metodosAsignados'));
+        return view('trabajadores.edit', compact('trabajador', 'roles', 'metodosSinDueno', 'metodosAsignados', 'modelos', 'modelosAsignados'));
     }
 
     public function update(Request $request, Trabajador $trabajador): RedirectResponse
@@ -55,6 +60,7 @@ class TrabajadorController extends Controller
         $trabajador->update($data);
 
         $this->sincronizarMetodos($trabajador, $request->input('metodos_pago', []));
+        $this->sincronizarModelosModerador($trabajador, $request->input('modelos_moderador', []));
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador actualizado correctamente.');
     }
@@ -171,5 +177,27 @@ class TrabajadorController extends Controller
 
         MetodoPago::whereIn('id_mp', $seleccionados)
             ->update(['id_propietario' => $trabajador->id_trab]);
+    }
+
+    private function sincronizarModelosModerador(Trabajador $trabajador, array $seleccionados): void
+    {
+        $rol = strtolower((string) ($trabajador->rol?->rol ?? ''));
+
+        $seleccionados = collect($seleccionados)->filter()->map(fn ($id) => (int) $id)->all();
+
+        if ($rol !== 'moderador') {
+            $trabajador->modelosAsignadas()->detach();
+
+            return;
+        }
+
+        $trabajador->modelosAsignadas()->sync($seleccionados);
+    }
+
+    private function modelosDisponibles(): Collection
+    {
+        return Trabajador::whereHas('rol', fn ($query) => $query->whereIn(DB::raw('lower(rol)'), ['modelo', 'ceo']))
+            ->orderBy('nombre')
+            ->get();
     }
 }

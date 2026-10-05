@@ -50,13 +50,21 @@
         @error('direccion') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 
-    @if (!empty($metodosSinDueno) || !empty($metodosAsignados))
-        <div class="form-group" id="metodos-propietario" style="{{ strtolower($trabajador?->rol?->rol ?? '') !== 'propietario' && old('id_rol') != ($trabajador?->rol?->id_rol ?? '') && old('id_rol') !== $roles->firstWhere('rol','propietario')?->id_rol ? 'display:none' : '' }}">
+    @php
+        $rolTrabajador = strtolower($trabajador?->rol?->rol ?? '');
+        $idRolPropietario = $roles->firstWhere('rol', 'propietario')?->id_rol;
+        $idRolModerador = $roles->firstWhere('rol', 'moderador')?->id_rol;
+        $mostrarMetodosPropietario = ($rolTrabajador === 'propietario') || ((string)old('id_rol') === (string)$idRolPropietario);
+        $mostrarModelosModerador = ($rolTrabajador === 'moderador') || ((string)old('id_rol') === (string)$idRolModerador);
+    @endphp
+
+    @if (!empty($metodosSinDueno) || !empty($metodosAsignados ?? collect()))
+        <div class="form-group" id="metodos-propietario" style="{{ $mostrarMetodosPropietario ? '' : 'display:none' }}">
             <label>Métodos de pago asignados (para rol propietario)</label>
             <div class="permisos-list">
                 @php
                     $asignadosOld = collect(old('metodos_pago', []))->map(fn($m) => (int)$m)->all();
-                    $asignados = $asignadosOld !== [] ? $asignadosOld : ($metodosAsignados->pluck('id_mp')->map(fn($m) => (int)$m)->all() ?? []);
+                    $asignados = $asignadosOld !== [] ? $asignadosOld : (($metodosAsignados ?? collect())->pluck('id_mp')->map(fn($m) => (int)$m)->all() ?? []);
                 @endphp
                 @foreach (($metodosAsignados ?? collect())->merge($metodosSinDueno ?? collect())->sortBy('metodo_pago') as $mp)
                     <label class="permiso-item">
@@ -70,8 +78,50 @@
         </div>
     @endif
 
+    @if (!empty($modelos))
+        <div class="form-group" id="modelos-moderador" style="{{ $mostrarModelosModerador ? '' : 'display:none' }}">
+            <label>Modelos asignados (para rol moderador)</label>
+            <div class="permisos-list">
+                @php
+                    $asignadosModelosOld = collect(old('modelos_moderador', []))->map(fn($m) => (int)$m)->all();
+                    $asignadosModelos = $asignadosModelosOld !== [] ? $asignadosModelosOld : (($modelosAsignados ?? collect())->pluck('id_trab')->map(fn($m) => (int)$m)->all() ?? []);
+                @endphp
+                @foreach ($modelos as $mod)
+                    <label class="permiso-item">
+                        <input type="checkbox" name="modelos_moderador[]" value="{{ $mod->id_trab }}" @checked(in_array((int)$mod->id_trab, $asignadosModelos))>
+                        <span>{{ $mod->nombre_completo }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <small class="muted">Solo se aplican cuando el rol seleccionado es <strong>moderador</strong>. Al cambiar de rol a otro, estas asignaciones se quitan automáticamente.</small>
+            @error('modelos_moderador') <div class="text-danger">{{ $message }}</div> @enderror
+        </div>
+    @endif
+
     <div class="flex-between mt-4">
         <a href="{{ route('trabajadores.index') }}" class="btn btn-secondary">Cancelar</a>
         <button type="submit" class="btn btn-primary">{{ $trabajador ? 'Actualizar' : 'Guardar' }}</button>
     </div>
 </form>
+
+<script>
+    const rolSelect = document.getElementById('rolSelect');
+    const metodosBlock = document.getElementById('metodos-propietario');
+    const modelosBlock = document.getElementById('modelos-moderador');
+
+    function toggleBlocks() {
+        if (!rolSelect) return;
+        const rol = rolSelect.options[rolSelect.selectedIndex]?.text.toLowerCase() || '';
+        if (metodosBlock) {
+            metodosBlock.style.display = rol === 'propietario' ? '' : 'none';
+        }
+        if (modelosBlock) {
+            modelosBlock.style.display = rol === 'moderador' ? '' : 'none';
+        }
+    }
+
+    if (rolSelect) {
+        rolSelect.addEventListener('change', toggleBlocks);
+        toggleBlocks();
+    }
+</script>
