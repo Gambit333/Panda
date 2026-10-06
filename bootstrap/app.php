@@ -5,6 +5,8 @@ use App\Http\Middleware\EnsureRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,5 +26,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Si la sesión expiró (SESSION_LIFETIME corto) o el token CSRF ya no
+        // cuadra, Laravel respondería 419 "Page Expired". En vez de esa página
+        // se vuelve al login, que es lo que espera el usuario.
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            return redirect()
+                ->route('login')
+                ->with('info', 'Tu sesión expiró. Vuelve a iniciar sesión.');
+        });
     })->create();

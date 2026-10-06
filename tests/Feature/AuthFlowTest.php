@@ -18,6 +18,21 @@ class AuthFlowTest extends TestCase
         $this->get('/reportes')->assertRedirect('/login');
     }
 
+    public function test_token_csrf_invalido_vuelve_al_login(): void
+    {
+        $rol = Rol::create(['rol' => 'admin']);
+        $trabajador = Trabajador::create([
+            'nombre' => 'Ana', 'apellido' => 'Admin',
+            'email' => 'ana@nomina.test', 'id_rol' => $rol->id_rol,
+            'password' => Hash::make('secreta123'),
+        ]);
+
+        $this->actingAs($trabajador)
+            ->withSession(['_token' => 'token-invalido'])
+            ->post('/logout', ['_token' => 'otro-token'])
+            ->assertRedirect('/login');
+    }
+
     public function test_first_login_creates_and_hashes_password(): void
     {
         $rol = Rol::create(['rol' => 'modelo']);
