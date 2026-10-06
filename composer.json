@@ -51,6 +51,9 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "post-install-cmd": [
+            "@php -r \"file_exists('public/storage') || symlink(storage_path('app/public'), public_path('storage'));\""
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
