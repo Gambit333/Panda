@@ -99,7 +99,7 @@
 
     <div class="form-group">
         <label>Comprobante de pago (imagen)</label>
-        @if ($reporte?->comprobante)
+        @if ($reporte?->comprobante_url)
             <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
                 <a href="{{ $reporte->comprobante_url }}" target="_blank">
                     <img src="{{ $reporte->comprobante_url }}" alt="Comprobante actual" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AbonoAdelantoController;
 use App\Http\Controllers\AdelantoController;
 use App\Http\Controllers\CierreSemanalController;
+use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MetodoPagoController;
@@ -25,6 +26,13 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Comprobante de un reporte: lo sirve la copia en BD (`comprobantes`) o la
+    // del disco. Lo ve quien puede ver el reporte (superroles, modelo/moderador
+    // del reporte o el propietario del método de pago).
+    Route::middleware('auth')->group(function (): void {
+        Route::get('comprobantes/{reporte}', [ComprobanteController::class, 'show'])->name('comprobantes.show');
+    });
 
     // Sección propia de los dueños de métodos de pago: solo fecha, precio y
     // comprobante de los reportes de sus cuentas, divididos por método.

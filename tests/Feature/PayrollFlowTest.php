@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CierreSemanal;
+use App\Models\Comprobante;
 use App\Models\MetodoPago;
 use App\Models\PagoEmpleado;
 use App\Models\ReportePago;
@@ -147,6 +148,13 @@ class PayrollFlowTest extends TestCase
         $this->assertStringContainsString('comprobantes/', $reporte->comprobante);
         Storage::disk('public')->assertExists($reporte->comprobante);
 
+        // También se guardó una copia en la BD (sobrevive a los deploys).
+        $this->assertSame(1, Comprobante::count());
+        $copia = Comprobante::firstOrFail();
+        $this->assertSame($reporte->id_reporte, $copia->id_reporte);
+        $this->assertSame(strlen($copia->binario), $copia->tamano);
+        $this->assertSame($copia->binario, base64_decode($copia->imagen));
+
         $this->put("/reportes/{$reporte->id_reporte}", $campos + [
             'eliminar_comprobante' => '1',
         ])->assertSessionHasNoErrors();
@@ -154,6 +162,7 @@ class PayrollFlowTest extends TestCase
         $reporte->refresh();
         $this->assertNull($reporte->comprobante);
         Storage::disk('public')->assertMissing($ruta);
+        $this->assertSame(0, Comprobante::count());
     }
 
     private function pngDePrueba(): UploadedFile

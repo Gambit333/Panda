@@ -67,7 +67,7 @@
                                 @endif
                             </td>
                             <td>
-                                @if ($reporte->comprobante)
+                                @if ($reporte->comprobante_url)
                                     <a href="{{ $reporte->comprobante_url }}" target="_blank" title="Ver comprobante">
                                         <img src="{{ $reporte->comprobante_url }}" alt="Comprobante" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
                                     </a>

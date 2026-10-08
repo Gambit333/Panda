@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comprobante;
 use App\Models\MetodoPago;
 use App\Models\ReportePago;
 use App\Models\Trabajador;
@@ -19,7 +20,7 @@ class ReportePagoController extends Controller
         $usuario = auth()->user();
         $soloMios = ! $usuario->esSuperRol();
 
-        $query = ReportePago::with(['modelo', 'moderador', 'metodoPago', 'cierreSemanal']);
+        $query = ReportePago::with(['modelo', 'moderador', 'metodoPago', 'cierreSemanal', 'comprobanteBinario']);
 
         // Un moderador solo ve los reportes que él registró.
         if ($soloMios) {
@@ -63,7 +64,11 @@ class ReportePagoController extends Controller
             $data['comprobante'] = $this->guardarComprobante($request->file('comprobante'));
         }
 
-        ReportePago::create($data);
+        $reporte = ReportePago::create($data);
+
+        if ($request->hasFile('comprobante')) {
+            $this->guardarComprobanteBD($reporte, $request->file('comprobante'));
+        }
 
         return redirect()->route('reportes.index')->with('success', 'Reporte de pago creado correctamente.');
     }
@@ -81,6 +86,10 @@ class ReportePagoController extends Controller
         }
 
         $moderadores = $this->trabajadoresPorRol(['moderador', 'chatter']);
+
+        if ($reporte->comprobante) {
+            $reporte->load('comprobanteBinario');
+        }
 
         $metodosPago = MetodoPago::all();
 
@@ -108,6 +117,10 @@ class ReportePagoController extends Controller
         }
 
         $reporte->update($data);
+
+        if ($request->hasFile('comprobante')) {
+            $this->guardarComprobanteBD($reporte, $request->file('comprobante'));
+        }
 
         return redirect()->route('reportes.index')->with('success', 'Reporte de pago actualizado correctamente.');
     }
@@ -166,11 +179,50 @@ class ReportePagoController extends Controller
     }
 
     /**
-     * Guarda el comprobante en disco (storage/app/public/comprobantes).
-     * La BD solo guarda la ruta; si GD está disponible se re-codifica a JPEG
-     * (máx. 1600px, calidad 72) para minimizar el espacio ocupado.
+     * Guarda el comprobante en disco (storage/app/public/comprobantes) y devuelve
+     * la ruta relativa que se guarda en `reporte_pagos.comprobante`. El binario
+     * además se persiste en la BD (ver guardarComprobanteBD).
      */
     private function guardarComprobante(UploadedFile $archivo): string
+    {
+        $comp = $this->binarioComprobante($archivo);
+
+        if ($comp['comprimido']) {
+            $nombre = 'comprobantes/'.$archivo->hashName().'.jpg';
+            Storage::disk('public')->put($nombre, $comp['binario']);
+
+            return $nombre;
+        }
+
+        return $archivo->store('comprobantes', 'public');
+    }
+
+    /**
+     * Persiste una copia del comprobante en la BD (tabla `comprobantes`) para
+     * que sobreviva a los deploys con storage efímero. Si ya existía una copia
+     * para el reporte se reemplaza.
+     */
+    private function guardarComprobanteBD(ReportePago $reporte, UploadedFile $archivo): void
+    {
+        $comp = $this->binarioComprobante($archivo);
+
+        Comprobante::updateOrCreate(
+            ['id_reporte' => $reporte->id_reporte],
+            [
+                'mime' => $comp['mime'],
+                'tamano' => strlen($comp['binario']),
+                'imagen' => base64_encode($comp['binario']),
+            ]
+        );
+    }
+
+    /**
+     * Binario listo para guardar: JPEG comprimido (si GD está disponible) o el
+     * archivo original tal cual.
+     *
+     * @return array{binario: string, mime: string, comprimido: bool}
+     */
+    private function binarioComprobante(UploadedFile $archivo): array
     {
         if (function_exists('gd_info')) {
             $jpeg = $this->comprimirAJPEG($archivo);
@@ -179,10 +231,17 @@ class ReportePagoController extends Controller
             }
         }
 
-        return $archivo->store('comprobantes', 'public');
+        return [
+            'binario' => (string) $archivo->get(),
+            'mime' => $archivo->getClientMimeType() ?: 'image/jpeg',
+            'comprimido' => false,
+        ];
     }
 
-    private function comprimirAJPEG(UploadedFile $archivo): ?string
+    /**
+     * @return array{binario: string, mime: string, comprimido: bool}|null
+     */
+    private function comprimirAJPEG(UploadedFile $archivo): ?array
     {
         try {
             $imagen = match ($archivo->guessExtension()) {
@@ -213,18 +272,20 @@ class ReportePagoController extends Controller
                 $imagen = $nueva;
             }
 
-            $nombre = 'comprobantes/'.$archivo->hashName().'.jpg';
-
             ob_start();
             imagejpeg($imagen, null, 72);
             $binario = ob_get_clean();
             imagedestroy($imagen);
 
-            if ($binario === false || ! Storage::disk('public')->put($nombre, $binario)) {
+            if ($binario === false) {
                 return null;
             }
 
-            return $nombre;
+            return [
+                'binario' => $binario,
+                'mime' => 'image/jpeg',
+                'comprimido' => true,
+            ];
         } catch (\Throwable) {
             return null;
         }
@@ -235,5 +296,8 @@ class ReportePagoController extends Controller
         if ($reporte->comprobante && Storage::disk('public')->exists($reporte->comprobante)) {
             Storage::disk('public')->delete($reporte->comprobante);
         }
+
+        // También se quita la copia guardada en BD (si existía).
+        Comprobante::where('id_reporte', $reporte->id_reporte)->delete();
     }
 }

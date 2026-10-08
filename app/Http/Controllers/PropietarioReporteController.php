@@ -18,7 +18,7 @@ class PropietarioReporteController extends Controller
     {
         $metodos = MetodoPago::where('id_propietario', Auth::id())->orderBy('metodo_pago')->get();
 
-        $reportes = ReportePago::with('metodoPago')
+        $reportes = ReportePago::with('metodoPago', 'comprobanteBinario')
             ->whereIn('id_mp', $metodos->pluck('id_mp'))
             ->latest('fecha_reporte')
             ->get()
