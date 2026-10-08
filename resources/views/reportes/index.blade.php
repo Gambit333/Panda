@@ -61,7 +61,7 @@
                             @endunless
                             <td>
                                 @if ($reporte->cierreSemanal)
-                                    <span class="badge">#{{ $reporte->cierreSemanal->id_cierre }}</span>
+                                    <span class="badge">{{ $reporte->cierreSemanal->fecha_inicio->format('d/m') }} – {{ $reporte->cierreSemanal->fecha_fin->format('d/m/Y') }}</span>
                                 @else
                                     <span class="muted">Sin asignar</span>
                                 @endif

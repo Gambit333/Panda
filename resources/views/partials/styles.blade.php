@@ -127,6 +127,11 @@
     .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .table-wrap > table { min-width: 100%; }
 
+    /* Columnas de ID: siguen en el HTML pero no se pintan en pantalla, para que
+       no se vea si un registro es el #123 o el #213. Para volver a mostrarlas
+       basta con cambiar display:none por display:table-cell aquí. */
+    .col-id { display: none; }
+
     .btn {
         display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
         padding: .5rem .9rem; border-radius: .5rem; border: 1px solid transparent;

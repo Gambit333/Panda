@@ -95,7 +95,7 @@ class DashboardController extends Controller
             ->keyBy('id_trab');
 
         return $filas->map(fn ($fila) => [
-            'nombre' => $nombres->get($fila->trabajador_id)?->nombre_completo ?? 'Trabajador #'.$fila->trabajador_id,
+            'nombre' => $nombres->get($fila->trabajador_id)?->nombre_completo ?? 'Trabajador',
             'total' => (float) $fila->total,
             'reportes' => (int) $fila->reportes,
         ]);
@@ -149,7 +149,7 @@ class DashboardController extends Controller
             if ($ultimoCierre) {
                 $reportes = (clone $base)->where('id_cierre', $ultimoCierre);
                 $cierre = CierreSemanal::find($ultimoCierre);
-                $periodo = 'Último cierre #'.$ultimoCierre;
+                $periodo = 'Último cierre';
                 if ($cierre) {
                     $periodo .= ' ('.$cierre->fecha_inicio->format('d/m/Y').' - '.$cierre->fecha_fin->format('d/m/Y').')';
                 }

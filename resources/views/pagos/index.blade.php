@@ -13,9 +13,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>Empleado</th>
-                        <th>Cierre</th>
+                        <th class="col-id">Cierre</th>
                         <th>Período</th>
                         <th>Monto Bruto</th>
                         <th>Monto Neto</th>
@@ -28,9 +28,9 @@
                 <tbody>
                     @forelse ($pagos as $pago)
                         <tr>
-                            <td>#{{ $pago->id_pago }}</td>
+                            <td class="col-id">#{{ $pago->id_pago }}</td>
                             <td><strong>{{ $pago->trabajador?->nombre_completo ?? '-' }}</strong></td>
-                            <td>#{{ $pago->cierreSemanal?->id_cierre ?? '-' }}</td>
+                            <td class="col-id">#{{ $pago->cierreSemanal?->id_cierre ?? '-' }}</td>
                             <td>
                                 @if ($pago->cierreSemanal)
                                     {{ $pago->cierreSemanal->fecha_inicio->format('d/m/Y') }} — {{ $pago->cierreSemanal->fecha_fin->format('d/m/Y') }}
@@ -56,7 +56,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="empty">No hay pagos registrados.</td></tr>
+                        <tr><td colspan="8" class="empty">No hay pagos registrados.</td></tr>
                     @endforelse
                 </tbody>
 

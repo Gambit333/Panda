@@ -13,7 +13,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>Rol</th>
                         <th>Trabajadores asignados</th>
                         <th>Secciones permitidas</th>
@@ -27,7 +27,7 @@
                             $bloqueado = $rol->permisosBloqueados();
                         @endphp
                         <tr>
-                            <td>#{{ $rol->id_rol }}</td>
+                            <td class="col-id">#{{ $rol->id_rol }}</td>
                             <td><strong>{{ $rol->rol }}</strong></td>
                             <td>
                                 <span class="badge">{{ $rol->trabajadores_count }} {{ Str::plural('trabajador', $rol->trabajadores_count) }}</span>
@@ -58,7 +58,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="empty">No hay roles registrados.</td></tr>
+                        <tr><td colspan="4" class="empty">No hay roles registrados.</td></tr>
                     @endforelse
                 </tbody>
 

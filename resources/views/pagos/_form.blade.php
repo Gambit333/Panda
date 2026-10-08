@@ -26,7 +26,7 @@
                 <option value="">Seleccionar...</option>
                 @foreach ($cierres as $cierre)
                     <option value="{{ $cierre->id_cierre }}" @selected(old('id_cierre', $pago?->id_cierre, request('id_cierre')) == $cierre->id_cierre)>
-                        #{{ $cierre->id_cierre }} — {{ $cierre->fecha_inicio->format('d/m/Y') }} / {{ $cierre->fecha_fin->format('d/m/Y') }}
+                        {{ $cierre->fecha_inicio->format('d/m/Y') }} / {{ $cierre->fecha_fin->format('d/m/Y') }}
                     </option>
                 @endforeach
             </select>

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', "Cierre #{$cierre->id_cierre}")
+@section('title', 'Cierre del '.$cierre->fecha_inicio->format('d/m/Y').' al '.$cierre->fecha_fin->format('d/m/Y'))
 
 @section('content')
     <div class="flex-between mb-4">
