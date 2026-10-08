@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Sistema de nómina para reportar pagos recibidos por plataformas (OnlyFans, etc.) y liquidar pagos a empleados por cierres semanales. Frontend en Blade (en app renderizada por el servidor), backend **Laravel 12** (PHP 8.2+), base de datos **PostgreSQL** hosteada en **Supabase**. Deploy objetivo: **Laravel Cloud** (PHP sobre la red de Cloudflare; no corre dentro de Cloudflare Workers, que es un runtime JS/WASM).
+Sistema de nómina para reportar pagos recibidos por plataformas (OnlyFans, etc.) y liquidar pagos a empleados por cierres semanales. Frontend en Blade (en app renderizada por el servidor), backend **Laravel 12** (PHP 8.2+), base de datos **PostgreSQL** hosteada en **Supabase**. Deploy en **Railway** (contenedor PHP 8.2 + Nginx; no corre dentro de Cloudflare Workers, Vercel ni InfinityFree, que son runtimes JS/sin `pdo_pgsql`). Ver la sección **Deploy a Railway**.
 
 ## Stack
 
@@ -40,13 +40,14 @@ Nota pooler: puerto **6543 = modo transacción** (conexiones cortas; recomendado
 | Tabla | PK | Columnas | FKs |
 |---|---|---|---|
 | `roles` | `id_rol` (int) | `rol` varchar, `permisos?` json (**null = nunca editado → acceso por defecto**; se añadió con la migración `2026_10_03_120000_add_permisos_to_roles_table`) | — |
-| `trabajador` | `id_trab` (int) | `nombre`, `apellido`, `telefono?`, `email?`, `direccion?`, `password?`, `intentos_fallidos` (0), `bloqueado` (false), `bloqueado_hasta?` | `id_rol → roles` |
+| `trabajador` | `id_trab` (int) | `nombre`, `apellido`, `telefono?`, `email?`, `direccion?`, `password?`, `intentos_fallidos` (0), `bloqueado` (false), `bloqueado_hasta?`, **`porcentaje?`** decimal(5,2) — % de pago único del trabajador (vacío = defecto del rol; migración `2026_10_07_000002_add_porcentaje_single`). Ojo: también existen en Supabase `porcentaje_modelo`, `porcentaje_moderador`, `porcentaje_administrativo`, `porcentaje_pinto` (migración `2026_10_07_000001`) creadas por error, **sin uso** y **no se pueden borrar** (la BD no permite `DROP`); ignorarlas. | `id_rol → roles` |
 | `metodos_pago` | `id_mp` (int) | `metodo_pago`, `propietario?`, `porcentaje_cuenta?` — **sin `impuesto`** (el impuesto es global 15%; se quitó del modelo, la validación, el formulario y el listado, y con la migración `2026_10_02_120000_drop_impuesto_from_metodos_pago_table`) | — |
 | `cierre_semanal` | `id_cierre` (int) | `fecha_inicio`, `fecha_fin`, `total?` | — |
 | `pago_empleados` | `id_pago` (int) | `monto_bruto`, `monto_neto`, `deuda`, `monto_final`, `nota?` | `id_trab → trabajador`, `id_cierre → cierre_semanal` |
 | `adelantos` | `id_adelanto` (int) | `tipo` (`adelanto`/`prestamo`), `monto`, `fecha`, `nota?` | `id_trab → trabajador` (cascade) |
 | `abonos_adelanto` | `id_abono` (int) | `monto`, `fecha`, `nota?`, `id_pago?` | `id_adelanto → adelantos` (cascade), `id_pago? → pago_empleados` (cascade) |
 | `reporte_pagos` | `id_reporte` (int) | `plataforma`, `user_cliente`, `precio`, `servicio`, `duracion?`, `fecha_reporte?`, `descripcion?`, **`comprobante?`** | `id_modelo → trabajador`, `id_moderador → trabajador`, `id_mp → metodos_pago`, `id_cierre? → cierre_semanal` |
+| `modelo_moderador` | `id` (int) | `id_moderador`, `id_modelo`, **`porcentaje?`** decimal(5,2) — % que cobra el moderador por cada modelo asignada (vacío = su `porcentaje` o el defecto 20%); columna añadida con la migración `2026_10_07_000004` | `id_moderador → trabajador` (cascade), `id_modelo → trabajador` (cascade), único `(id_moderador, id_modelo)` |
 | `detalle_pago_cierre` | `id_detalle` (int) | `concepto` (`modelo`/`moderador`/`pinto`/`admin`), `monto`, `total_antes_impuestos`, `total_despues_impuestos`, `nota?` | `id_cierre → cierre_semanal` (cascade), `id_trab? → trabajador` |
 
 Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mantener consistencia de tipos en Postgres.
@@ -58,7 +59,7 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 - **Pago a empleado**: registro manual del monto liquidado a un trabajador vinculado a un cierre.
 - **Comprobante de pago** (`reportes`): al crear/editar un reporte se puede adjuntar la imagen del comprobante. La imagen se guarda **en disco** (`storage/app/public/comprobantes`, enlazado en `/storage`) y la BD solo almacena la ruta (`reporte_pagos.comprobante`). Si GD está disponible se re-codifica a JPEG (máx. 1600px, calidad 72); si no, se guarda el original. Validación: imagen ≤ 4 MB (`jpeg/png/jpg/gif/webp`). Renombrar/eliminar el reporte borra el archivo del disco.
 - **Comisión por cuenta** (`cierres.show`): el cierre agrupa sus reportes por `metodos_pago` y aplica `porcentaje_cuenta`: neto = `precio × (1 - pct/100)`, comisión = `precio × pct/100`. Impuesto global 15% (`CierreSemanalController::IMPUESTO_PORCENTAJE`) y el resto para Brea = impuestos − comisión total.
-- **Pagos calculados** (`app/Support/CalculadorPagosCierre.php`): al generar un cierre se calcula y **guarda** en `detalle_pago_cierre` (tarjeta "Pagos calculados" en `cierres.show`; los cierres antiguos se regeneran al abrir su `show`). Flujo en dos pasos: (1) por trabajador se suma su **total de ventas** (Σ `precio` de sus reportes) y se muestra en la columna **total antes de impuestos**; ese número es solo informativo, no interviene en ningún cálculo. (2) A ese total de ventas se le descuenta únicamente el **15% de impuestos** (`precio − precio×0.15`; la comisión del método de pago NO se resta aquí porque ya se calcula en la tarjeta de comisiones por cuenta) y la suma por trabajador se muestra en **total después de impuestos**. Los porcentajes se aplican sobre ese número final ya agregado (ej.: 800 de ventas → 680 después de impuestos; María Brea 75% → 510). Modelo normal: 50% modelo / 20% moderador / 30% fondo administrativo. **María Brea (rol `ceo`) como modelo**: 75% Brea / 18% su moderador / 7% María Pinto (se busca por apellido "pinto"). Fondo administrativo: 20% rol `ceo`, 7% María Pinto, 1.5% **a cada** rol `admin`. Identificación de personas: rol `ceo`/`admin` + apellido `pinto`. Tests: `tests/Feature/CalculoPagosCierreTest.php`.
+- **Pagos calculados** (`app/Support/CalculadorPagosCierre.php`): al generar un cierre se calcula y **guarda** en `detalle_pago_cierre` (tarjeta "Pagos calculados" en `cierres.show`; se calcula al crear el cierre y **solo se regenera si el cierre no tiene ninguna fila guardada**, así que cambiar los porcentajes no reescribe cierres ya guardados). Flujo en dos pasos: (1) por trabajador se suma su **total de ventas** (Σ `precio` de sus reportes) y se muestra en la columna **total antes de impuestos**; ese número es solo informativo, no interviene en ningún cálculo. (2) A ese total de ventas se le descuenta únicamente el **15% de impuestos** (`precio − precio×0.15`; la comisión del método de pago NO se resta aquí porque ya se calcula en la tarjeta de comisiones por cuenta) y la suma por trabajador se muestra en **total después de impuestos**. Los porcentajes se aplican sobre ese número final ya agregado (ej.: 800 de ventas → 680 después de impuestos; una modelo con 50% → 340). **Sin casos especiales por persona**: no existe ningún reparto hardcodeado para María Brea (como modelo) ni para María Pinto (por apellido "pinto"); si se quiere que alguien cobre distinto se le pone su `porcentaje` en su ficha y el rol que corresponda. **Porcentajes configurables** (campo único `trabajador.porcentaje`, en el formulario de Trabajadores como "Porcentaje de pago (%)"): cada trabajador cobra su % sobre su propio número final y, si lo tiene vacío, se usa el **valor por defecto del rol/contexto**: modelo **50%** de sus ventas / moderador **20%** de sus ventas. Los moderadores además definen un **% por modelo** en la asignación de Trabajadores (tabla pivote `modelo_moderador.porcentaje`, no confundir con `trabajador.porcentaje`): prevalece el % de la asignación, luego el `porcentaje` del moderador y por último el 20%. El cálculo del moderador suma por cada modelo su % × el número final de esa modelo (no usa un total global del moderador). La **sección administrativa NO cobra de lo que sobra de las modelos**: sus pagos salen del **total sin impuestos** del cierre (Σ `precio` − 15%, el mismo número que muestra "Total después de impuestos"), cada uno con su % → **20%** rol `ceo`, **1.5%** a cada rol `admin`, **1.5%** a cada rol `support` y **1.5%** a cada rol `programador` (ceo/admin/support usan el `concepto` `admin` "Pago sección administrativa"; programador usa el `concepto` `programador`, etiqueta "Pago a programación"). Ojo: el % se aplica en **todos** los contextos del trabajador (ventas propias y sección administrativa), así que quien tenga varios papeles debe elegir un solo valor. Tests: `tests/Feature/CalculoPagosCierreTest.php` (incluye `test_usa_el_porcentaje_propio_de_cada_trabajador`).
 
 - **Adelantos ↔ Pagos**: el saldo pendiente de adelantos de un trabajador se descuenta automáticamente del pago (`PagoEmpleadoController@aplicarAdelantos`). Al guardar el pago, el `deuda` elegido se reparte **FIFO** (adelantos más antiguos primero) como abonos en `abonos_adelanto`, cada uno con `id_pago` = pago que lo generó; así el saldo de la sección de adelantos nunca queda duplicado. La operación es **idempotente**: en `update` primero se borran los abonos de ese pago (`$pago->abonosAdelanto()->delete()`) y se rehacen con la deuda nueva, y si se desmarca la casilla “Registrar el descuento como abono” no se crea ninguno (sirve para deudas/manuales). El formulario (`pagos/_form.blade.php`) trae los saldos como JSON y al elegir el trabajador llena `deuda` + `monto_final`; el botón “Usar saldo de adelantos” reaplica el valor. Ojo: la columna real en Supabase es `pago_empleados.deuda` (no `deuda_descontada`), y ambas deben coincidir con el `$fillable`/`casts` de `PagoEmpleado`. Tests: `tests/Feature/AdelantoTest.php` y `tests/Feature/PagoAdelantoTest.php`.
 
@@ -129,43 +130,23 @@ Nota: las PK usan `integer` (autoincrement) y las FK `unsignedInteger` para mant
 - Lint: `vendor\bin\pint` (listas de archivos explícitas si no hay git)
 - Compilar vistas: `php artisan view:cache`
 
-## Deploy gratis: Google Cloud e2-micro (always free)
+## Deploy a Railway
 
-InfinityFree (gratis) **no permite** conexiones salientes a BDs externas ni tiene `pdo_pgsql`; verificado en su foro. Opción gratis que sí funciona con Supabase: **VM e2-micro de Google Cloud** (level always-free: sin expiración; la tarjeta solo se pide para verificar, no se cobra dentro del límite).
+La app está hosteada en **Railway** (contenedor PHP 8.2; el doc root es `public/`).
 
-1. Crear proyecto en Google Cloud Console y activar Billing (verificación con tarjeta, sin cargo).
-2. Habilitar Compute Engine y crear una VM:
-   - Máquina: **e2-micro** (solo en regiones `us-west1`, `us-central1` o `us-east1` para mantenerse en el nivel gratis).
-   - Disco: 30 GB estándar. Sistema: **Ubuntu 24.04**.
-3. Abrir tráfico HTTP/HTTPS (firewall GCP). Con `gcloud`:
-   `gcloud compute firewall-rules create allow-http-https --allow tcp:80,tcp:443`
-4. Subir el código:
-   - Opción A (recomendada): subir el proyecto a GitHub y luego `git clone` en la VM.
-   - Opción B: `rsync -av --exclude=.env --exclude=vendor --exclude=.git ./ usuario@IP:/var/www/nomina/`
-5. Ejecutar el aprovisionamiento (SCRIPT: `deploy/server-setup.sh`):
-   ```
-   SERVER_DB_HOST='aws-0-us-west-2.pooler.supabase.com' \
-   SERVER_DB_USERNAME='postgres.<project-ref>' \
-   SERVER_DB_PASSWORD='<clave>' \
-   REPO_URL='git@github.com:tu/nomina.git' \
-   bash deploy/server-setup.sh
-   ```
-   El script instala Nginx + PHP-FPM + `pdo_pgsql` + Composer, crea `.env`, cachea config y deja la app en `/var/www/nomina`.
-6. Si faltara algo en la BD remota: `cd /var/www/nomina && php artisan migrate --force`.
-7. Para dominio propio + HTTPS gratis: instalar `certbot` y configurar `APP_URL` en `.env` (y re-cachear `config`).
-8. Recordatorios: NO subir `.env` a git; NO ejecutar `db:seed` sobre datos reales.
+1. Subir el proyecto a GitHub (`.env` y `vendor/` NO; `.env` ya está en `.gitignore`).
+2. En Railway: *New Project → Deploy from GitHub repo*. Railway instala Composer y levanta la app; si no detecta el runtime PHP, agregar un `Dockerfile`/`nixpacks.toml` que instale `pdo_pgsql` y `pgsql` y arranque PHP-FPM/Nginx con `public/` como raíz.
+3. Variables de entorno del servicio (nunca `.env` en git): `APP_KEY` (de `php artisan key:generate --show`), `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, `SESSION_DRIVER=database` (necesita la tabla `sessions`) y las `DB_*` de Supabase: `DB_CONNECTION=pgsql`, `DB_HOST=aws-0-<region>.pooler.supabase.com`, `DB_PORT=6543`, `DB_DATABASE=postgres`, `DB_USERNAME=postgres.<project-ref>`, `DB_PASSWORD`, `DB_SSLMODE=require`.
+4. Migraciones: una vez desde local (`php artisan migrate --force`) o desde la consola/Shell de Railway con el mismo comando.
+5. Al hacer deploy: `composer install --no-dev` (lo hace el build) y `php artisan config:cache && php artisan route:cache && php artisan view:cache`.
+6. **Comprobantes**: se guardan en disco (`storage/app/public/comprobantes`); Railway usa un filesystem **efímero**, así que montar un Volume en `storage/app/public` (y correr `php artisan storage:link`) o cambiar a un disco externo, si no las imágenes se pierden en cada deploy.
+7. El script `deploy/server-setup.sh` sigue siendo la alternativa para montar la app a mano en una VPS (Nginx + PHP-FPM + `pdo_pgsql` + Composer).
 
-## Deploy a Laravel Cloud
-
-1. Inicializar git en la raíz del proyecto y subir a GitHub.
-2. En Laravel Cloud, crear una app apuntando al repo (stack PHP sin frontend build).
-3. Configurar las variables de entorno en Laravel Cloud: `APP_KEY` (generada), `APP_ENV=production`, `APP_DEBUG=false`, y las variables `DB_*` de Supabase.
-4. Migrar la BD remota una vez desde local: `php artisan migrate --force` contra Supabase.
-5. Laravel Cloud corre el contenedor PHP automáticamente; no usa Nginx propio (frente manageado de Cloudflare).
+Alternativas descartadas: **Laravel Cloud** y **Google Cloud e2-micro** (ya no se usan; ver historial de git).
 
 ## Notas
 
-- El proyecto NO corre dentro de Cloudflare Workers, **Vercel** ni **InfinityFree gratis** (Vercel y Workers no ejecutan PHP; InfinityFree bloquea BDs externas y no tiene pdo_pgsql).
+- El proyecto corre en **Railway**; NO corre dentro de Cloudflare Workers, **Vercel** ni **InfinityFree gratis** (Vercel y Workers no ejecutan PHP; InfinityFree bloquea BDs externas y no tiene pdo_pgsql). El `vercel.json` de la raíz es un resto de una prueba y no funciona (la app necesita PHP con `pdo_pgsql`).
 - El host directo de Supabase (`db.<ref>.supabase.co:5432`) es **solo IPv6**; PHP y Vercel/Lambda (egress IPv4) necesitan el **connection pooler** (`aws-0-<region>.pooler.supabase.com`, usuario `postgres.<ref>`, puerto **6543** — modos: 6543 transacción / 5432 sesión).
 - El valor `DB_PASSWORD` está en `.env`; no debe subirse al repositorio (`.env` ya está en `.gitignore`).
 - Para desarrollo local sin Supabase se puede cambiar temporalmente `DB_CONNECTION=sqlite` (el archivo `database/database.sqlite` ya existe localmente).

@@ -24,6 +24,7 @@
                         <th>ID</th>
                         <th>Nombre completo</th>
                         <th>Rol</th>
+                        <th>% pago</th>
                         <th>Teléfono</th>
                         <th>Email</th>
                         <th>Cuenta</th>
@@ -36,6 +37,13 @@
                             <td>#{{ $trabajador->id_trab }}</td>
                             <td><strong>{{ $trabajador->nombre }} {{ $trabajador->apellido }}</strong></td>
                             <td><span class="badge">{{ $trabajador->rol?->rol ?? 'Sin Rol' }}</span></td>
+                            <td>
+                                @if ($trabajador->porcentaje !== null)
+                                    {{ rtrim(rtrim(number_format((float) $trabajador->porcentaje, 2, '.', ''), '0'), '.') }}%
+                                @else
+                                    <span class="muted">-</span>
+                                @endif
+                            </td>
                             <td>
                                 @if ($trabajador->telefono)
                                     <a href="tel:{{ $trabajador->telefono }}">{{ $trabajador->telefono }}</a>
@@ -94,7 +102,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="empty">No hay trabajadores registrados.</td></tr>
+                        <tr><td colspan="8" class="empty">No hay trabajadores registrados.</td></tr>
                     @endforelse
                 </tbody>
 

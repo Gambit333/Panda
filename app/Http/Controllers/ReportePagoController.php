@@ -39,7 +39,7 @@ class ReportePagoController extends Controller
         $metodosPago = MetodoPago::all();
 
         if ($esAdmin) {
-            $modelos = $this->trabajadoresPorRol(['modelo', 'ceo']);
+            $modelos = $this->trabajadoresPorRol(['modelo']);
             $moderadores = $this->trabajadoresPorRol(['moderador', 'chatter']);
         } else {
             // Moderador: Carga únicamente las modelos asignadas a él en la tabla pivote
@@ -74,7 +74,7 @@ class ReportePagoController extends Controller
             return $redirigir;
         }
 
-        $modelos = $this->trabajadoresPorRol(['modelo', 'ceo']);
+        $modelos = $this->trabajadoresPorRol(['modelo']);
 
         if (! $modelos->contains('id_trab', $reporte->id_modelo) && $reporte->modelo) {
             $modelos = $modelos->concat([$reporte->modelo])->unique('id_trab');

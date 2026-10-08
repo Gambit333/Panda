@@ -186,4 +186,19 @@ class TrabajadorCrudTest extends TestCase
             ->assertOk()
             ->assertSee('No se puede eliminar a Juan Pérez');
     }
+
+    public function test_la_ceo_no_aparece_entre_las_modelos_para_moderadores(): void
+    {
+        $admin = $this->admin();
+
+        Trabajador::create(['nombre' => 'Ceo', 'apellido' => 'Brea', 'id_rol' => Rol::create(['rol' => 'ceo'])->id_rol]);
+        Trabajador::create(['nombre' => 'Modelo', 'apellido' => 'Brea', 'id_rol' => Rol::create(['rol' => 'modelo'])->id_rol]);
+
+        $this->actingAs($admin);
+
+        $this->get(route('trabajadores.create'))
+            ->assertOk()
+            ->assertSee('Modelo Brea')
+            ->assertDontSee('Ceo Brea');
+    }
 }

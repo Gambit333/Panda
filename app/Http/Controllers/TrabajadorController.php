@@ -37,7 +37,7 @@ class TrabajadorController extends Controller
         $trabajador = Trabajador::create($data);
 
         $this->sincronizarMetodos($trabajador, $request->input('metodos_pago', []));
-        $this->sincronizarModelosModerador($trabajador, $request->input('modelos_moderador', []));
+        $this->sincronizarModelosModerador($trabajador, $request->input('modelos_moderador', []), $request->input('porcentajes_modelo', []));
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador creado correctamente.');
     }
@@ -60,7 +60,7 @@ class TrabajadorController extends Controller
         $trabajador->update($data);
 
         $this->sincronizarMetodos($trabajador, $request->input('metodos_pago', []));
-        $this->sincronizarModelosModerador($trabajador, $request->input('modelos_moderador', []));
+        $this->sincronizarModelosModerador($trabajador, $request->input('modelos_moderador', []), $request->input('porcentajes_modelo', []));
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador actualizado correctamente.');
     }
@@ -137,6 +137,9 @@ class TrabajadorController extends Controller
             'email' => ['nullable', 'email', 'max:255', Rule::unique('trabajador', 'email')->ignore($id, 'id_trab')],
             'direccion' => ['nullable', 'string'],
             'id_rol' => ['required', 'integer', 'exists:roles,id_rol'],
+            'porcentaje' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'porcentajes_modelo' => ['nullable', 'array'],
+            'porcentajes_modelo.*' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
     }
 
@@ -179,7 +182,13 @@ class TrabajadorController extends Controller
             ->update(['id_propietario' => $trabajador->id_trab]);
     }
 
-    private function sincronizarModelosModerador(Trabajador $trabajador, array $seleccionados): void
+    /**
+     * Guarda en la tabla pivote `modelo_moderador` las modelos asignadas al
+     * moderador y, por cada una, el porcentaje que cobra por ella (`porcentajes_modelo`).
+     * Un porcentaje vacío se guarda como NULL: el cálculo usará el `porcentaje`
+     * del moderador o, si tampoco tiene, el defecto del rol (20%).
+     */
+    private function sincronizarModelosModerador(Trabajador $trabajador, array $seleccionados, array $porcentajes): void
     {
         $rol = strtolower((string) ($trabajador->rol?->rol ?? ''));
 
@@ -191,12 +200,24 @@ class TrabajadorController extends Controller
             return;
         }
 
-        $trabajador->modelosAsignadas()->sync($seleccionados);
+        $conPorcentajes = collect($seleccionados)->mapWithKeys(function ($id) use ($porcentajes) {
+            $pct = $porcentajes[$id] ?? null;
+            $pct = ($pct === null || $pct === '') ? null : $pct;
+
+            return [$id => ['porcentaje' => $pct]];
+        })->all();
+
+        $trabajador->modelosAsignadas()->sync($conPorcentajes);
     }
 
+    /**
+     * Modelos que se pueden asignar a un moderador: solo los del rol `modelo`.
+     * La ceo (rol `ceo`) queda fuera: sus ventas se registran con su propia
+     * ficha de modelo si hace falta, nunca desde la asignación de moderadores.
+     */
     private function modelosDisponibles(): Collection
     {
-        return Trabajador::whereHas('rol', fn ($query) => $query->whereIn(DB::raw('lower(rol)'), ['modelo', 'ceo']))
+        return Trabajador::whereHas('rol', fn ($query) => $query->whereIn(DB::raw('lower(rol)'), ['modelo']))
             ->orderBy('nombre')
             ->get();
     }

@@ -14,7 +14,7 @@ return new class extends Migration
             $table->unsignedInteger('id_modelo');
             $table->timestamps();
 
-            // Claves forÃ¡neas hacia la tabla trabajador
+            // Claves foráneas hacia la tabla trabajador
             $table->foreign('id_moderador')->references('id_trab')->on('trabajador')->onDelete('cascade');
             $table->foreign('id_modelo')->references('id_trab')->on('trabajador')->onDelete('cascade');
 

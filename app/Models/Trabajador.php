@@ -37,6 +37,7 @@ class Trabajador extends Model implements AuthenticatableContract
         'intentos_fallidos',
         'bloqueado',
         'bloqueado_hasta',
+        'porcentaje',
     ];
 
     protected $hidden = [
@@ -51,7 +52,8 @@ class Trabajador extends Model implements AuthenticatableContract
             'modelo_moderador',
             'id_moderador',
             'id_modelo'
-        );
+        )
+            ->withPivot('porcentaje');
     }
 
     public function moderadoresAsignados()
@@ -71,6 +73,7 @@ class Trabajador extends Model implements AuthenticatableContract
             'bloqueado' => 'boolean',
             'bloqueado_hasta' => 'datetime',
             'intentos_fallidos' => 'integer',
+            'porcentaje' => 'decimal:2',
         ];
     }
 

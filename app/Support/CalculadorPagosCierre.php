@@ -12,44 +12,49 @@ use Illuminate\Support\Facades\DB;
  * Calcula el pago de modelos, moderadores y sección administrativa de un cierre.
  *
  * Flujo (ocurre después del cálculo de comisiones por método de pago):
- *  1. Base por reporte = precio NETO (precio menos la comisión del método de pago).
+ *  1. Base por reporte = precio de venta (la comisión por método de pago se calcula
+ *     aparte, en la tarjeta de comisiones por cuenta, por eso no se resta aquí).
  *  2. A esa base se le saca el 15%.
- *  3. Models lo restante:
- *     - Modelo normal: 50% a la modelo, 20% al moderador, 30% al fondo administrativo.
- *     - María Brea (ceo) como modelo: 75% Brea, 18% su moderador, 7% María Pinto.
- *  4. Fondo administrativo (lo que queda, 30% de cada modelo normal) se reparte:
- *     20% al rol ceo (María Brea), 7% a María Pinto, 1.5% a cada admin.
+ *  3. Cada trabajador cobra su PORCENTAJE (columna `trabajador.porcentaje`) sobre ese
+ *     número; si está vacío se usa el valor por defecto del contexto:
+ *     - Como modelo: 50% de sus ventas.
+ *     - Como moderador: su porcentaje se define POR MODELO en la asignación
+ *       (`modelo_moderador.porcentaje`); vacío = el `porcentaje` del moderador o,
+ *       si tampoco, 20% de las ventas de cada modelo que modera.
+ *  4. La sección administrativa NO cobra de "lo que sobra" de las modelos: sus pagos
+ *     salen del TOTAL sin impuestos (Σ precio − 15%) del cierre, cada uno con su %:
+ *     20% rol `ceo`, 1.5% a cada rol `admin`, 1.5% a cada rol `support` y 1.5% a cada
+ *     rol `programador` (ceo/admin/support → concepto `admin`; programador → `programador`).
+ *
+ * No hay casos especiales por persona: quien quiera un reparto distinto (p. ej. a
+ * María Brea cobrando como modelo o a María Pinto cobrando de la sección
+ * administrativa) lo define con su propio `porcentaje` y el rol que le corresponda.
+ * Un solo campo `porcentaje` por trabajador: se aplica en todos los contextos en los
+ * que participe.
  */
 class CalculadorPagosCierre
 {
     private const CORTE_IMPUESTO = 0.15;   // al total de cada modelo se le saca el 15%
 
-    // Modelo normal
-    private const MODELO = 0.50;
+    // Valores por defecto (solo se usan si el trabajador no tiene `porcentaje`)
+    private const MODELO = 50;
 
-    private const MODERADOR = 0.20;
+    private const MODERADOR = 20;
 
-    private const ADMIN = 0.30;            // lo que queda (30%)
+    // Sección administrativa: porcentaje sobre el TOTAL sin impuestos del cierre
+    private const ADMIN_CEO = 20;
 
-    // María Brea (ceo) como modelo
-    private const BREA_MODELO = 0.75;
+    private const ADMIN_CADA = 1.5;
 
-    private const BREA_MODERADOR = 0.18;
+    private const ADMIN_SUPPORT = 1.5;
 
-    private const BREA_PINTO = 0.07;
-
-    // Reparto del fondo administrativo
-    private const ADMIN_CEO = 0.20;
-
-    private const ADMIN_PINTO = 0.07;
-
-    private const ADMIN_CADA = 0.015;
+    private const ADMIN_PROGRAMADOR = 1.5;
 
     public const CONCEPTOS = [
         'modelo' => 'Pago como modelo',
         'moderador' => 'Pago como moderador',
-        'pinto' => 'Pago a María Pinto',
         'admin' => 'Pago sección administrativa',
+        'programador' => 'Pago a programación',
     ];
 
     /**
@@ -59,15 +64,16 @@ class CalculadorPagosCierre
     {
         $ceo = $this->trabajadorPorRol('ceo');
         $admins = $this->trabajadoresPorRol('admin');
-        $pinto = $this->trabajadorPorApellido('pinto');
+        $soportes = $this->trabajadoresPorRol('support');
+        $programadores = $this->trabajadoresPorRol('programador');
+        $trabajadores = Trabajador::all()->keyBy('id_trab');
 
         $filas = [];
-        $fondoAdmin = 0.0;
+        $totalSinImpuestos = 0.0;
         $antes = [];
         $despues = [];
         $baseModelos = [];
         $baseModeradores = [];
-        $baseModeradoresCeo = [];
 
         foreach ($cierre->reportes as $reporte) {
             $antesReporte = round((float) $reporte->precio, 2);
@@ -87,40 +93,47 @@ class CalculadorPagosCierre
             $idModelo = (int) $reporte->id_modelo;
             $idModerador = (int) $reporte->id_moderador;
             $baseModelos[$idModelo] = round(($baseModelos[$idModelo] ?? 0) + $despuesReporte, 2);
+            $baseModeradores[$idModerador][$idModelo] = round(($baseModeradores[$idModerador][$idModelo] ?? 0) + $despuesReporte, 2);
 
-            if ($ceo && $idModelo === (int) $ceo->id_trab) {
-                $baseModeradoresCeo[$idModerador] = round(($baseModeradoresCeo[$idModerador] ?? 0) + $despuesReporte, 2);
-            } else {
-                $baseModeradores[$idModerador] = round(($baseModeradores[$idModerador] ?? 0) + $despuesReporte, 2);
-            }
+            // Base de la sección administrativa: el total sin impuestos del cierre,
+            // sin descontar lo que cobran las modelos ni sus moderadores.
+            $totalSinImpuestos = round($totalSinImpuestos + $despuesReporte, 2);
         }
 
         // Los porcentajes se aplican sobre el número final ya agregado de cada trabajador.
         foreach ($baseModelos as $idModelo => $total) {
-            if ($ceo && $idModelo === (int) $ceo->id_trab) {
-                $this->sumar($filas, $idModelo, 'modelo', $total * self::BREA_MODELO, '75% de sus ganancias como modelo');
-                $this->sumar($filas, $pinto?->id_trab, 'pinto', $total * self::BREA_PINTO, '7% de las ganancias de la CEO');
-            } else {
-                $this->sumar($filas, $idModelo, 'modelo', $total * self::MODELO, '50% de sus ganancias como modelo');
-                $fondoAdmin += $total * self::ADMIN;
+            $pct = $this->porcentaje($trabajadores->get($idModelo), self::MODELO);
+            $this->sumar($filas, $idModelo, 'modelo', $total * $pct, $this->txt($pct).'% de sus ganancias como modelo');
+        }
+
+        $porcentajesPorModelo = $this->porcentajesModeradorModelo();
+
+        foreach ($baseModeradores as $idModerador => $porModelo) {
+            $moderador = $trabajadores->get($idModerador);
+
+            foreach ($porModelo as $idModelo => $total) {
+                $pct = $this->porcentajeModerador($moderador, $porcentajesPorModelo[$idModerador.'|'.$idModelo] ?? null);
+                $modelo = $trabajadores->get($idModelo);
+                $nota = $this->txt($pct).'% como moderador'
+                    .($modelo ? ' ('.$modelo->nombre.' '.$modelo->apellido.')' : '');
+                $this->sumar($filas, $idModerador, 'moderador', $total * $pct, $nota);
             }
         }
 
-        foreach ($baseModeradores as $idModerador => $total) {
-            $this->sumar($filas, $idModerador, 'moderador', $total * self::MODERADOR, '20% como moderador');
-        }
-
-        foreach ($baseModeradoresCeo as $idModerador => $total) {
-            $this->sumar($filas, $idModerador, 'moderador', $total * self::BREA_MODERADOR, '18% de las ganancias de la CEO');
-        }
-
-        $fondoAdmin = round($fondoAdmin, 2);
-
-        if ($fondoAdmin > 0) {
-            $this->sumar($filas, $ceo?->id_trab, 'admin', $fondoAdmin * self::ADMIN_CEO, '20% del fondo administrativo (rol ceo)');
-            $this->sumar($filas, $pinto?->id_trab, 'admin', $fondoAdmin * self::ADMIN_PINTO, '7% del fondo administrativo');
+        if ($totalSinImpuestos > 0) {
+            $pctCeo = $this->porcentaje($ceo, self::ADMIN_CEO);
+            $this->sumar($filas, $ceo?->id_trab, 'admin', $totalSinImpuestos * $pctCeo, $this->txt($pctCeo).'% del total sin impuestos (rol ceo)');
             foreach ($admins as $admin) {
-                $this->sumar($filas, $admin->id_trab, 'admin', $fondoAdmin * self::ADMIN_CADA, '1.5% del fondo administrativo (cada admin)');
+                $pctAdmin = $this->porcentaje($admin, self::ADMIN_CADA);
+                $this->sumar($filas, $admin->id_trab, 'admin', $totalSinImpuestos * $pctAdmin, $this->txt($pctAdmin).'% del total sin impuestos (cada admin)');
+            }
+            foreach ($soportes as $soporte) {
+                $pctSupport = $this->porcentaje($soporte, self::ADMIN_SUPPORT);
+                $this->sumar($filas, $soporte->id_trab, 'admin', $totalSinImpuestos * $pctSupport, $this->txt($pctSupport).'% del total sin impuestos (rol support)');
+            }
+            foreach ($programadores as $programador) {
+                $pctProgramador = $this->porcentaje($programador, self::ADMIN_PROGRAMADOR);
+                $this->sumar($filas, $programador->id_trab, 'programador', $totalSinImpuestos * $pctProgramador, $this->txt($pctProgramador).'% del total sin impuestos (rol programador)');
             }
         }
 
@@ -143,6 +156,55 @@ class CalculadorPagosCierre
         $precio = round((float) $reporte->precio, 2);
 
         return round($precio * (1 - self::CORTE_IMPUESTO), 2);
+    }
+
+    /**
+     * Porcentaje (en tanto por uno) que cobra un trabajador en un contexto dado.
+     * Si no tiene `porcentaje` definido se usa el valor por defecto del contexto.
+     */
+    private function porcentaje(?Trabajador $trabajador, float $porDefecto): float
+    {
+        if ($trabajador === null || $trabajador->porcentaje === null) {
+            return $porDefecto / 100;
+        }
+
+        return ((float) $trabajador->porcentaje) / 100;
+    }
+
+    /**
+     * Porcentaje (en tanto por uno) que cobra un moderador por las ventas de una
+     * modelo. Prevalencia: % definido en la asignación (pivote) > % propio del
+     * moderador > defecto del rol (20%).
+     *
+     * @param  float|null  $porModelo  % guardado en `modelo_moderador.porcentaje`
+     */
+    private function porcentajeModerador(?Trabajador $moderador, ?float $porModelo): float
+    {
+        if ($porModelo !== null) {
+            return $porModelo / 100;
+        }
+
+        return $this->porcentaje($moderador, self::MODERADOR);
+    }
+
+    /**
+     * Porcentajes guardados en la asignación modelo-moderador.
+     *
+     * @return array<string, float> clave "id_moderador|id_modelo" => porcentaje
+     */
+    private function porcentajesModeradorModelo(): array
+    {
+        return DB::table('modelo_moderador')
+            ->whereNotNull('porcentaje')
+            ->get()
+            ->mapWithKeys(fn ($fila) => [$fila->id_moderador.'|'.$fila->id_modelo => (float) $fila->porcentaje])
+            ->all();
+    }
+
+    /** Formatea un porcentaje (tanto por uno) para las notas: 0.015 → "1.5". */
+    private function txt(float $porcentaje): string
+    {
+        return rtrim(rtrim(number_format($porcentaje * 100, 2, '.', ''), '0'), '.');
     }
 
     /**
@@ -179,10 +241,5 @@ class CalculadorPagosCierre
     private function trabajadoresPorRol(string $rol): Collection
     {
         return Trabajador::whereHas('rol', fn ($q) => $q->whereIn(DB::raw('lower(rol)'), [$rol]))->get();
-    }
-
-    private function trabajadorPorApellido(string $apellido): ?Trabajador
-    {
-        return Trabajador::all()->first(fn (Trabajador $t) => str_contains(mb_strtolower((string) $t->apellido), $apellido));
     }
 }

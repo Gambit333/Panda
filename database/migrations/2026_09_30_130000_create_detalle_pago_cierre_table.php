@@ -12,7 +12,7 @@ return new class extends Migration
             $table->increments('id_detalle');
             $table->unsignedInteger('id_cierre')->index();
             $table->unsignedInteger('id_trab')->nullable()->index();
-            $table->string('concepto')->index(); // modelo | moderador | pinto | admin
+            $table->string('concepto')->index(); // modelo | moderador | admin | programador
             $table->decimal('monto', 12, 2)->default(0);
             $table->string('nota')->nullable();
             $table->timestamps();

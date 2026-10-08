@@ -95,7 +95,7 @@
             $totales = collect($conceptos)->mapWithKeys(fn ($label, $clave) => [$clave => $pagos->where('concepto', $clave)->sum('monto')]);
         @endphp
         <div class="card mb-4">
-            <h2 style="font-size:1rem; margin-bottom:1rem;">Pagos calculados: modelos, moderadores y sección administrativa</h2>
+            <h2 style="font-size:1rem; margin-bottom:1rem;">Pagos calculados: modelos, moderadores, administración y programación</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
