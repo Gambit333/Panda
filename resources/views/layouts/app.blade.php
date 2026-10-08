@@ -48,6 +48,9 @@
         @if (in_array('roles', $modulosPermitidos, true))
             <a href="{{ route('roles.index') }}" class="{{ active('roles') }}">Roles</a>
         @endif
+        @if (Auth::user()->esPropietario())
+            <a href="{{ route('propietario.reportes') }}" class="{{ active('propietario') }}">Mis reportes</a>
+        @endif
     </aside>
     <div class="sidebar-backdrop" id="navBackdrop"></div>
     <div class="main">

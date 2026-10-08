@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\PagoEmpleadoController;
+use App\Http\Controllers\PropietarioReporteController;
 use App\Http\Controllers\ReportePagoController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\TrabajadorController;
@@ -24,6 +25,13 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Sección propia de los dueños de métodos de pago: solo fecha, precio y
+    // comprobante de los reportes de sus cuentas, divididos por método.
+    Route::middleware('propietario')->group(function (): void {
+        Route::get('propietario/reportes', [PropietarioReporteController::class, 'index'])
+            ->name('propietario.reportes');
+    });
 
     // Cada módulo pide su clave de permiso: role:reportes, role:cierres, ...
     Route::middleware('role:reportes')->group(function (): void {

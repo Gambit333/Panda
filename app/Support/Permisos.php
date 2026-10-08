@@ -9,8 +9,9 @@ namespace App\Support;
  * - `admin` y `programador` siempre tienen acceso a todo y sus permisos NO se pueden editar.
  * - Un rol con `permisos` guardados (array, aunque esté vacía) usa esa lista tal cual.
  * - Un rol sin `permisos` guardados (null) entra a todo, salvo `modelo` (nada),
- *   `moderador` (solo reportes) y `propietario` (nada, ve solo el inicio con los
- *   ingresos de sus métodos de pago), para no dejar a nadie fuera por un rol mal escrito.
+ *   `moderador` (solo reportes) y `propietario` (nada; ve solo el inicio con
+ *   los ingresos de sus métodos y su sección "Mis reportes"), para no dejar a
+ *   nadie fuera por un rol mal escrito.
  */
 class Permisos
 {
@@ -35,7 +36,8 @@ class Permisos
     public const POR_DEFECTO = [
         'modelo' => [],
         'moderador' => ['reportes'],
-        // Dueños de métodos de pago: solo el inicio, con sus propios ingresos.
+        // Dueños de métodos de pago: sin módulos; su sección "Mis reportes"
+        // la controla el middleware `propietario`, no estos permisos.
         'propietario' => [],
     ];
 

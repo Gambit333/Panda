@@ -86,6 +86,9 @@ class Trabajador extends Model implements AuthenticatableContract
     /** Solo el rol programador puede cambiar contraseñas y desbloquear usuarios. */
     public const ROLES_GESTORES = ['programador'];
 
+    /** Dueños de métodos de pago: ven su sección "Mis reportes". */
+    public const ROLES_PROPIETARIOS = ['propietario'];
+
     public function rol(): BelongsTo
     {
         return $this->belongsTo(Rol::class, 'id_rol');
@@ -136,6 +139,12 @@ class Trabajador extends Model implements AuthenticatableContract
     public function esProgramador(): bool
     {
         return in_array(strtolower((string) ($this->rol?->rol ?? '')), self::ROLES_GESTORES, true);
+    }
+
+    /** Propietarios de métodos de pago: tienen su sección "Mis reportes". */
+    public function esPropietario(): bool
+    {
+        return in_array(strtolower((string) ($this->rol?->rol ?? '')), self::ROLES_PROPIETARIOS, true);
     }
 
     public function estaBloqueado(): bool
