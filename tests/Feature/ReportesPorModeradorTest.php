@@ -38,6 +38,24 @@ class ReportesPorModeradorTest extends TestCase
         $this->assertSame(2, ReportePago::count());
     }
 
+    public function test_el_moderador_ve_de_que_modelo_es_cada_reporte(): void
+    {
+        $moderador = $this->trabajador('Luis', 'Mod', 'moderador');
+        $modelo = $this->trabajador('Ana', 'Modelo', 'modelo');
+        $metodo = MetodoPago::create(['propietario' => 'Equipo', 'metodo_pago' => 'PayPal']);
+
+        $this->reporte($moderador, $modelo, $metodo, 'cliente-mio', 100);
+        $this->reporte($moderador, $modelo, $metodo, 'cliente-mio-2', 150);
+
+        $this->actingAs($moderador);
+
+        $this->get('/reportes')
+            ->assertOk()
+            ->assertSee('cliente-mio')
+            ->assertSee('<th>Modelo</th>', false)
+            ->assertSee('Ana Modelo');
+    }
+
     public function test_el_admin_sigue_viendo_los_reportes_de_todos_los_moderadores(): void
     {
         $moderador = $this->trabajador('Luis', 'Mod', 'moderador');

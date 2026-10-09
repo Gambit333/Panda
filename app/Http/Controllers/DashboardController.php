@@ -107,7 +107,7 @@ class DashboardController extends Controller
             ? ReportePago::where('id_moderador', $user->id_trab)
             : ReportePago::where('id_modelo', $user->id_trab);
 
-        $reportes = $reportes->latest('fecha_reporte')->get();
+        $reportes = $reportes->with('modelo')->latest('fecha_reporte')->get();
 
         $stats = [
             'reportado' => $reportes->sum('precio'),
@@ -115,11 +115,45 @@ class DashboardController extends Controller
             'liquidado' => PagoEmpleado::where('id_trab', $user->id_trab)->sum('monto_final'),
         ];
 
+        $modelosGanancias = $rol === 'moderador'
+            ? $this->modelosGanancias($user)
+            : collect();
+
         return view('dashboard', [
             'modoEmpleado' => $rol,
             'stats' => $stats,
             'reportes' => $reportes,
+            'modelosGanancias' => $modelosGanancias,
         ]);
+    }
+
+    /**
+     * Cuánto lleva ganado cada modelo asignada a un moderador, según los
+     * reportes en los que ese moderador figura como moderador.
+     *
+     * @return Collection<int, array{nombre: string, total: float, reportes: int}>
+     */
+    private function modelosGanancias(Trabajador $moderador): Collection
+    {
+        $modelos = $moderador->modelosAsignadas()->orderBy('nombre')->get();
+        $ids = $modelos->pluck('id_trab');
+
+        $filas = ReportePago::query()
+            ->where('id_moderador', $moderador->id_trab)
+            ->whereIn('id_modelo', $ids)
+            ->select('id_modelo as id', DB::raw('SUM(precio) as total'), DB::raw('COUNT(*) as cantidad'))
+            ->groupBy('id_modelo')
+            ->get()
+            ->keyBy('id');
+
+        return $modelos
+            ->map(fn (Trabajador $modelo) => [
+                'nombre' => $modelo->nombre_completo,
+                'total' => (float) ($filas->get($modelo->id_trab)?->total ?? 0),
+                'reportes' => (int) ($filas->get($modelo->id_trab)?->cantidad ?? 0),
+            ])
+            ->sortByDesc('total')
+            ->values();
     }
 
     /**

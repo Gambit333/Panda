@@ -119,6 +119,9 @@
                 <table>
                     <thead>
                         <tr>
+                            @if ($modoEmpleado === 'moderador')
+                                <th>Modelo</th>
+                            @endif
                             <th>Fecha</th>
                             <th>Plataforma / Cliente</th>
                             <th>Servicio</th>
@@ -128,6 +131,9 @@
                     <tbody>
                         @forelse ($reportes as $reporte)
                             <tr>
+                                @if ($modoEmpleado === 'moderador')
+                                    <td><strong>{{ $reporte->modelo?->nombre_completo ?? '-' }}</strong></td>
+                                @endif
                                 <td>{{ $reporte->fecha_reporte?->format('d/m/Y') ?? '-' }}</td>
                                 <td>
                                     <strong>{{ $reporte->plataforma }}</strong>
@@ -137,13 +143,34 @@
                                 <td class="positive"><strong>${{ number_format($reporte->precio, 2) }}</strong></td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="empty">Aún no tienes reportes registrados.</td></tr>
+                            <tr><td colspan="{{ $modoEmpleado === 'moderador' ? 5 : 4 }}" class="empty">Aún no tienes reportes registrados.</td></tr>
                         @endforelse
                     </tbody>
 
                 </table>
             </div>
         </div>
+
+        @if ($modoEmpleado === 'moderador' && $modelosGanancias->isNotEmpty())
+            <div class="card">
+                <div class="flex-between mb-4">
+                    <h2 style="font-size:1rem;">Ganancias de mis modelos</h2>
+                    <span class="badge">Mis reportes</span>
+                </div>
+                <ol class="ranking">
+                    @forelse ($modelosGanancias as $item)
+                        <li>
+                            <span class="rank">{{ $loop->iteration }}</span>
+                            <span class="who">{{ $item['nombre'] }}</span>
+                            <span class="amount positive">${{ number_format($item['total'], 2) }}</span>
+                            <span class="muted small">{{ $item['reportes'] }} {{ $item['reportes'] === 1 ? 'reporte' : 'reportes' }}</span>
+                        </li>
+                    @empty
+                        <li class="empty">No tienes modelos asignadas.</li>
+                    @endforelse
+                </ol>
+            </div>
+        @endif
     @else
         {{-- VISTA MODO ADMINISTRADOR --}}
         <div class="cards">
