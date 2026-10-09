@@ -21,7 +21,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>Nombre completo</th>
                         <th>Rol</th>
                         <th>% pago</th>
@@ -34,7 +34,7 @@
                 <tbody>
                     @forelse ($trabajadores as $trabajador)
                         <tr>
-                            <td>#{{ $trabajador->id_trab }}</td>
+                            <td class="col-id">#{{ $trabajador->id_trab }}</td>
                             <td><strong>{{ $trabajador->nombre }} {{ $trabajador->apellido }}</strong></td>
                             <td><span class="badge">{{ $trabajador->rol?->rol ?? 'Sin Rol' }}</span></td>
                             <td>
@@ -102,7 +102,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="empty">No hay trabajadores registrados.</td></tr>
+                        <tr><td colspan="7" class="empty">No hay trabajadores registrados.</td></tr>
                     @endforelse
                 </tbody>
 

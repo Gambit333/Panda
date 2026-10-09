@@ -39,7 +39,7 @@
                 <tbody>
                     @forelse ($deudas as $fila)
                         <tr>
-                            <td><strong>{{ $fila['trabajador']?->nombre_completo ?? 'Trabajador #' . $fila['trabajador']?->id_trab }}</strong></td>
+                            <td><strong>{{ $fila['trabajador']?->nombre_completo ?? 'Trabajador' }}</strong></td>
                             <td>{{ $fila['cantidad'] }}</td>
                             <td>${{ number_format($fila['total'], 2) }}</td>
                             <td class="positive">${{ number_format($fila['pagado'], 2) }}</td>
@@ -65,7 +65,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>Trabajador</th>
                         <th>Tipo</th>
                         <th>Monto</th>
@@ -80,7 +80,7 @@
                 <tbody>
                     @forelse ($adelantos as $adelanto)
                         <tr>
-                            <td>#{{ $adelanto->id_adelanto }}</td>
+                            <td class="col-id">#{{ $adelanto->id_adelanto }}</td>
                             <td><strong>{{ $adelanto->trabajador?->nombre_completo ?? '-' }}</strong></td>
                             <td><span class="badge">{{ $adelanto->tipo_label }}</span></td>
                             <td>${{ number_format($adelanto->monto, 2) }}</td>
@@ -127,7 +127,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="empty">No hay adelantos ni préstamos registrados.</td></tr>
+                        <tr><td colspan="9" class="empty">No hay adelantos ni préstamos registrados.</td></tr>
                     @endforelse
                 </tbody>
 

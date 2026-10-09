@@ -13,7 +13,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>Método de pago</th>
                         <th>Propietario / Titular</th>
                         <th>Dueño con acceso</th>
@@ -25,7 +25,7 @@
                 <tbody>
                     @forelse ($metodos as $metodo)
                         <tr>
-                            <td>#{{ $metodo->id_mp }}</td>
+                            <td class="col-id">#{{ $metodo->id_mp }}</td>
                             <td><strong>{{ $metodo->metodo_pago }}</strong></td>
                             <td>{{ $metodo->propietario ?? '-' }}</td>
                             <td>
@@ -51,7 +51,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="empty">No hay métodos de pago registrados.</td></tr>
+                        <tr><td colspan="6" class="empty">No hay métodos de pago registrados.</td></tr>
                     @endforelse
                 </tbody>
 

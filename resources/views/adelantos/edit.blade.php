@@ -6,7 +6,7 @@
     <div class="card" style="max-width: 900px;">
         <div class="flex-between mb-4">
             <h2 style="font-size:1rem;">
-                Adelanto #{{ $adelanto->id_adelanto }} — {{ $adelanto->trabajador?->nombre_completo ?? 'trabajador eliminado' }}
+                Adelanto — {{ $adelanto->trabajador?->nombre_completo ?? 'trabajador eliminado' }}
             </h2>
             <span class="muted" style="font-size:.8rem;">
                 Saldo pendiente: <strong style="color: {{ $adelanto->saldado ? 'var(--success)' : 'var(--danger)' }};">

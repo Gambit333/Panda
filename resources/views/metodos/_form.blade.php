@@ -26,7 +26,7 @@
                 <option value="">— Sin dueño (no aparece en el inicio de nadie) —</option>
                 @foreach ($propietarios as $opcion)
                     <option value="{{ $opcion->id_trab }}" @selected((string) $duenoActual === (string) $opcion->id_trab)>
-                        {{ $opcion->nombre_completo }} (id {{ $opcion->id_trab }})
+                        {{ $opcion->nombre_completo }}
                     </option>
                 @endforeach
             </select>

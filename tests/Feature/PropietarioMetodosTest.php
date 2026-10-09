@@ -128,7 +128,8 @@ class PropietarioMetodosTest extends TestCase
         $this->actingAs($dueno)->get('/')
             ->assertOk()
             ->assertSee('20.00')
-            ->assertSee('Último cierre #'.$ultimo->id_cierre)
+            ->assertSee('Último cierre ('.$ultimo->fecha_inicio->format('d/m/Y').' - '.$ultimo->fecha_fin->format('d/m/Y').')')
+            ->assertDontSee('#'.$ultimo->id_cierre)
             ->assertDontSee('10.00');
     }
 

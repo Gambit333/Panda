@@ -13,7 +13,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>Fecha inicio</th>
                         <th>Fecha fin</th>
                         <th>Reportes</th>
@@ -26,7 +26,7 @@
                 <tbody>
                     @forelse ($cierres as $cierre)
                         <tr>
-                            <td>#{{ $cierre->id_cierre }}</td>
+                            <td class="col-id">#{{ $cierre->id_cierre }}</td>
                             <td>{{ $cierre->fecha_inicio->format('d/m/Y') }}</td>
                             <td>{{ $cierre->fecha_fin->format('d/m/Y') }}</td>
                             <td>{{ $cierre->reportes_count }}</td>
@@ -46,7 +46,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="empty">No hay cierres registrados.</td></tr>
+                        <tr><td colspan="7" class="empty">No hay cierres registrados.</td></tr>
                     @endforelse
                 </tbody>
 

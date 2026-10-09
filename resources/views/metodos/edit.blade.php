@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="card" style="max-width: 600px;">
-        <h2 style="font-size:1rem; margin-bottom:1.25rem;">Editar método #{{ $metodo->id_mp }}</h2>
+        <h2 style="font-size:1rem; margin-bottom:1.25rem;">Editar método de pago</h2>
         @include('metodos._form')
     </div>
 @endsection

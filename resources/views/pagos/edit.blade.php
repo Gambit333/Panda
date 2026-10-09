@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="card" style="max-width: 900px;">
-        <h2 style="font-size:1rem; margin-bottom:1.25rem;">Editar pago #{{ $pago->id_pago }}</h2>
+        <h2 style="font-size:1rem; margin-bottom:1.25rem;">Editar pago a empleado</h2>
         @include('pagos._form')
     </div>
 
@@ -15,7 +15,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Adelanto #</th>
+                            <th class="col-id">Adelanto #</th>
                             <th>Trabajador</th>
                             <th>Monto</th>
                             <th>Fecha</th>
@@ -24,7 +24,7 @@
                     <tbody>
                         @foreach ($pago->abonosAdelanto as $abono)
                             <tr>
-                                <td>#{{ $abono->adelanto?->id_adelanto ?? '—' }}</td>
+                                <td class="col-id">#{{ $abono->adelanto?->id_adelanto ?? '—' }}</td>
                                 <td>{{ $abono->adelanto?->trabajador?->nombre_completo ?? '—' }}</td>
                                 <td class="positive">${{ number_format($abono->monto, 2) }}</td>
                                 <td>{{ $abono->fecha?->format('d/m/Y') ?? '-' }}</td>

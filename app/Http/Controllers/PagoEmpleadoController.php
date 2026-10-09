@@ -109,7 +109,7 @@ class PagoEmpleadoController extends Controller
             ->get()
             ->filter(fn (Adelanto $adelanto) => $adelanto->saldo > 0);
 
-        $nota = 'Descuento aplicado en el pago #'.$pago->id_pago.' (cierre #'.$pago->id_cierre.')';
+        $nota = 'Descuento de adelantos aplicado en este pago';
 
         foreach ($adelantos as $adelanto) {
             if ($deuda <= 0) {
