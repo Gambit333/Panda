@@ -41,6 +41,18 @@ class ModeradorDashboardTest extends TestCase
         $respuesta->assertSee('Ceci Mora');
         $respuesta->assertSee('250.00');
         $respuesta->assertSee('50.00');
+
+        // Resumen "hasta el momento" con su porcentaje (20% por defecto).
+        $respuesta->assertSee('Ganancias hasta el momento');
+        $respuesta->assertSee('MIS GANANCIAS (con mi porcentaje)');
+        $respuesta->assertSee('300.00'); // 250 + 50 antes de impuestos
+        $respuesta->assertSee('255.00'); // 300 * 0.85
+        $respuesta->assertSee('51.00');  // 20% de 255
+
+        // El ranking muestra la ganancia del moderador junto a cada modelo.
+        $respuesta->assertSee('Ventas · Mi ganancia');
+        $respuesta->assertSee('42.50');  // 20% de (250 * 0.85)
+        $respuesta->assertSee('8.50');   // 20% de (50 * 0.85)
     }
 
     public function test_la_ganancia_solo_cuenta_los_reportes_del_moderador(): void

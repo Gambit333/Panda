@@ -7,6 +7,7 @@ use App\Models\MetodoPago;
 use App\Models\PagoEmpleado;
 use App\Models\ReportePago;
 use App\Models\Trabajador;
+use App\Support\CalculadorPagosCierre;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +68,8 @@ class DashboardController extends Controller
             'topModeradores' => $this->ranking('id_moderador'),
             'ultimosReportes' => $ultimosReportes,
             'ultimosCierres' => $ultimosCierres,
+            'resumen' => (new CalculadorPagosCierre)->resumenHastaAhora(),
+            'resumenConceptos' => CalculadorPagosCierre::CONCEPTOS,
         ]);
     }
 
@@ -115,8 +118,18 @@ class DashboardController extends Controller
             'liquidado' => PagoEmpleado::where('id_trab', $user->id_trab)->sum('monto_final'),
         ];
 
+        // Ganancias hasta el momento con el % del trabajador (misma lógica que el cierre).
+        $resumen = (new CalculadorPagosCierre)->resumenHastaAhora();
+        $misFilas = collect($resumen['filas'])->where('id_trab', $user->id_trab);
+        $miResumen = [
+            'reportes' => (int) $resumen['reportes'],
+            'total_antes' => round((float) $misFilas->max('total_antes') ?? 0, 2),
+            'total_despues' => round((float) $misFilas->max('total_despues') ?? 0, 2),
+            'ganancia' => round((float) $misFilas->sum('monto'), 2),
+        ];
+
         $modelosGanancias = $rol === 'moderador'
-            ? $this->modelosGanancias($user)
+            ? $this->modelosGanancias($user, $resumen['moderador_por_modelo'][$user->id_trab] ?? [])
             : collect();
 
         return view('dashboard', [
@@ -124,16 +137,19 @@ class DashboardController extends Controller
             'stats' => $stats,
             'reportes' => $reportes,
             'modelosGanancias' => $modelosGanancias,
+            'miResumen' => $miResumen,
         ]);
     }
 
     /**
      * Cuánto lleva ganado cada modelo asignada a un moderador, según los
-     * reportes en los que ese moderador figura como moderador.
+     * reportes en los que ese moderador figura como moderador. $gananciasPorModelo
+     * trae (del cálculo igual al cierre) cuánto le toca al moderador por modelo.
      *
-     * @return Collection<int, array{nombre: string, total: float, reportes: int}>
+     * @param  array<int, array{monto:float}>  $gananciasPorModelo  id_modelo => detalle
+     * @return Collection<int, array{nombre: string, total: float, reportes: int, ganancia: float}>
      */
-    private function modelosGanancias(Trabajador $moderador): Collection
+    private function modelosGanancias(Trabajador $moderador, array $gananciasPorModelo = []): Collection
     {
         $modelos = $moderador->modelosAsignadas()->orderBy('nombre')->get();
         $ids = $modelos->pluck('id_trab');
@@ -151,6 +167,7 @@ class DashboardController extends Controller
                 'nombre' => $modelo->nombre_completo,
                 'total' => (float) ($filas->get($modelo->id_trab)?->total ?? 0),
                 'reportes' => (int) ($filas->get($modelo->id_trab)?->cantidad ?? 0),
+                'ganancia' => round((float) ($gananciasPorModelo[$modelo->id_trab]['monto'] ?? 0), 2),
             ])
             ->sortByDesc('total')
             ->values();

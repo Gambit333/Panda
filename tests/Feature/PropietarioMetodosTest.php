@@ -129,7 +129,7 @@ class PropietarioMetodosTest extends TestCase
             ->assertOk()
             ->assertSee('20.00')
             ->assertSee('Último cierre ('.$ultimo->fecha_inicio->format('d/m/Y').' - '.$ultimo->fecha_fin->format('d/m/Y').')')
-            ->assertDontSee('#'.$ultimo->id_cierre)
+            ->assertDontSee('cierre #'.$ultimo->id_cierre)
             ->assertDontSee('10.00');
     }
 

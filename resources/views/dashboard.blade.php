@@ -17,6 +17,21 @@
             </div>
         </div>
 
+        {{-- Ganancias hasta el momento del propietario (solo las suyas: % de sus métodos) --}}
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="flex-between mb-4">
+                <h2 style="font-size:1rem;">Mis ganancias hasta el momento</h2>
+                <span class="badge">{{ $modoPropietario['periodo'] }}</span>
+            </div>
+            <div class="calc-row">
+                <span>INGRESOS DE MIS MÉTODOS</span><strong>${{ number_format($stats['ingresos'] ?? 0, 2) }}</strong>
+            </div>
+            <div class="calc-row calc-empty" style="margin-top:.5rem;">
+                <span>MIS GANANCIAS (según el % de mis métodos)</span>
+                <strong class="positive">${{ number_format($stats['ganancia_propietario'] ?? 0, 2) }}</strong>
+            </div>
+        </div>
+
         <div class="card">
             <div class="flex-between mb-4">
                 <h2 style="font-size:1rem;">Ingresos por método de pago</h2>
@@ -108,6 +123,27 @@
             </div>
         </div>
 
+        {{-- Ganancias hasta el momento con el porcentaje del trabajador (igual que el cierre semanal) --}}
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="flex-between mb-4">
+                <h2 style="font-size:1rem;">Ganancias hasta el momento</h2>
+                <span class="badge">{{ $modoEmpleado === 'modelo' ? 'Como modelo' : 'Como moderador' }}</span>
+            </div>
+            <div class="calc-row">
+                <span>TOTAL ANTES DE IMPUESTOS</span><strong>${{ number_format($miResumen['total_antes'] ?? 0, 2) }}</strong>
+            </div>
+            <div class="calc-row">
+                <span>TOTAL DESPUÉS DE IMPUESTOS (15%)</span><strong>${{ number_format($miResumen['total_despues'] ?? 0, 2) }}</strong>
+            </div>
+            <div class="calc-row calc-empty" style="margin-top:.5rem;">
+                <span>MIS GANANCIAS (con mi porcentaje)</span>
+                <strong class="positive">${{ number_format($miResumen['ganancia'] ?? 0, 2) }}</strong>
+            </div>
+            @if ($modoEmpleado === 'moderador')
+                <p class="muted small" style="margin-top:.5rem;">El desglose por modelo aparece en «Ganancias de mis modelos».</p>
+            @endif
+        </div>
+
         <div class="card">
             <div class="flex-between mb-4">
                 <h2 style="font-size:1rem;">Mis ganancias recientes</h2>
@@ -155,15 +191,16 @@
             <div class="card">
                 <div class="flex-between mb-4">
                     <h2 style="font-size:1rem;">Ganancias de mis modelos</h2>
-                    <span class="badge">Mis reportes</span>
+                    <span class="badge">Ventas · Mi ganancia</span>
                 </div>
                 <ol class="ranking">
                     @forelse ($modelosGanancias as $item)
                         <li>
                             <span class="rank">{{ $loop->iteration }}</span>
                             <span class="who">{{ $item['nombre'] }}</span>
-                            <span class="amount positive">${{ number_format($item['total'], 2) }}</span>
+                            <span class="amount positive" title="Ventas de la modelo">${{ number_format($item['total'], 2) }}</span>
                             <span class="muted small">{{ $item['reportes'] }} {{ $item['reportes'] === 1 ? 'reporte' : 'reportes' }}</span>
+                            <span class="amount positive" title="Tu ganancia por esta modelo">+${{ number_format($item['ganancia'] ?? 0, 2) }}</span>
                         </li>
                     @empty
                         <li class="empty">No tienes modelos asignadas.</li>
@@ -194,6 +231,61 @@
             <div class="stat">
                 <div class="label">Pagos a empleados</div>
                 <div class="value">${{ number_format($stats['pagos_empleados'] ?? 0, 2) }}</div>
+            </div>
+        </div>
+
+        {{-- Ganancias hasta el momento: mismo cálculo que un cierre semanal, con los reportes sin cerrar --}}
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="flex-between mb-4">
+                <h2 style="font-size:1rem;">Ganancias hasta el momento (como cierre semanal)</h2>
+                <span class="badge">{{ number_format($resumen['reportes'] ?? 0) }} reportes sin cerrar</span>
+            </div>
+            @php $filasResumen = $resumen['filas'] ?? []; @endphp
+            <div style="border-bottom:1px solid var(--border,#ddd); padding-bottom:.6rem; margin-bottom:.6rem;">
+                <div class="calc-row">
+                    <span>TOTAL FACTURADO</span><strong>${{ number_format($resumen['total_facturado'] ?? 0, 2) }}</strong>
+                </div>
+                <div class="calc-row">
+                    <span>TOTAL SIN IMPUESTOS (15%)</span><strong>${{ number_format($resumen['total_sin_impuestos'] ?? 0, 2) }}</strong>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Trabajador</th>
+                            <th>Total antes de impuestos</th>
+                            <th>Total después de impuestos</th>
+                            <th>Concepto</th>
+                            <th>Detalle</th>
+                            <th>Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($filasResumen as $fila)
+                            <tr>
+                                <td><strong>{{ $fila['nombre'] }}</strong></td>
+                                <td>${{ number_format($fila['total_antes'] ?? 0, 2) }}</td>
+                                <td>${{ number_format($fila['total_despues'] ?? 0, 2) }}</td>
+                                <td>{{ $resumenConceptos[$fila['concepto']] ?? $fila['concepto'] }}</td>
+                                <td><small class="muted">{{ $fila['nota'] }}</small></td>
+                                <td class="positive" style="font-weight:bold;">${{ number_format($fila['monto'], 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="empty">Todavía no hay ganancias por calcular.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:.75rem;">
+                @foreach ($resumenConceptos as $clave => $label)
+                    <div class="calc-row">
+                        <span>{{ $label }}</span><strong>${{ number_format($resumen['por_concepto'][$clave] ?? 0, 2) }}</strong>
+                    </div>
+                @endforeach
+                <div class="calc-row calc-empty" style="margin-top:.5rem;">
+                    <span>TOTAL A PAGAR</span><strong>${{ number_format(collect($filasResumen)->sum('monto'), 2) }}</strong>
+                </div>
             </div>
         </div>
 

@@ -62,6 +62,42 @@ class CalculadorPagosCierre
      */
     public function calcular(CierreSemanal $cierre): array
     {
+        return $this->resumen($cierre->reportes)['filas'];
+    }
+
+    /**
+     * Resumen "hasta el momento": misma lógica que un cierre semanal, pero
+     * tomando los reportes que todavía no tienen cierre (id_cierre NULL).
+     *
+     * @return array{
+     *   reportes:int,
+     *   total_facturado:float,
+     *   total_sin_impuestos:float,
+     *   filas:array<int, array{id_trab:int, concepto:string, monto:float, nota:string, total_antes:float, total_despues:float, nombre:string}>,
+     *   por_concepto:array<string, float>,
+     *   moderador_por_modelo:array<int, array<int, array{id_modelo:int, modelo:string, total:float, porcentaje:float, monto:float}>>
+     * }
+     */
+    public function resumenHastaAhora(): array
+    {
+        return $this->resumen(
+            ReportePago::with(['modelo', 'moderador'])->whereNull('id_cierre')->get()
+        );
+    }
+
+    /**
+     * @param  Collection<int, ReportePago>  $reportes
+     * @return array{
+     *   reportes:int,
+     *   total_facturado:float,
+     *   total_sin_impuestos:float,
+     *   filas:array<int, array{id_trab:int, concepto:string, monto:float, nota:string, total_antes:float, total_despues:float, nombre:string}>,
+     *   por_concepto:array<string, float>,
+     *   moderador_por_modelo:array<int, array<int, array{id_modelo:int, modelo:string, total:float, porcentaje:float, monto:float}>>
+     * }
+     */
+    private function resumen(Collection $reportes): array
+    {
         $ceo = $this->trabajadorPorRol('ceo');
         $admins = $this->trabajadoresPorRol('admin');
         $soportes = $this->trabajadoresPorRol('support');
@@ -75,7 +111,7 @@ class CalculadorPagosCierre
         $baseModelos = [];
         $baseModeradores = [];
 
-        foreach ($cierre->reportes as $reporte) {
+        foreach ($reportes as $reporte) {
             $antesReporte = round((float) $reporte->precio, 2);
             $despuesReporte = $this->baseConImpuestos($reporte);
 
@@ -95,7 +131,7 @@ class CalculadorPagosCierre
             $baseModelos[$idModelo] = round(($baseModelos[$idModelo] ?? 0) + $despuesReporte, 2);
             $baseModeradores[$idModerador][$idModelo] = round(($baseModeradores[$idModerador][$idModelo] ?? 0) + $despuesReporte, 2);
 
-            // Base de la sección administrativa: el total sin impuestos del cierre,
+            // Base de la sección administrativa: el total sin impuestos de los reportes,
             // sin descontar lo que cobran las modelos ni sus moderadores.
             $totalSinImpuestos = round($totalSinImpuestos + $despuesReporte, 2);
         }
@@ -107,6 +143,7 @@ class CalculadorPagosCierre
         }
 
         $porcentajesPorModelo = $this->porcentajesModeradorModelo();
+        $moderadorPorModelo = [];
 
         foreach ($baseModeradores as $idModerador => $porModelo) {
             $moderador = $trabajadores->get($idModerador);
@@ -116,7 +153,15 @@ class CalculadorPagosCierre
                 $modelo = $trabajadores->get($idModelo);
                 $nota = $this->txt($pct).'% como moderador'
                     .($modelo ? ' ('.$modelo->nombre.' '.$modelo->apellido.')' : '');
-                $this->sumar($filas, $idModerador, 'moderador', $total * $pct, $nota);
+                $monto = round($total * $pct, 2);
+                $this->sumar($filas, $idModerador, 'moderador', $monto, $nota);
+                $moderadorPorModelo[$idModerador][$idModelo] = [
+                    'id_modelo' => $idModelo,
+                    'modelo' => $modelo?->nombre_completo ?? 'Trabajador #'.$idModelo,
+                    'total' => $total,
+                    'porcentaje' => round($pct * 100, 2),
+                    'monto' => $monto,
+                ];
             }
         }
 
@@ -141,9 +186,23 @@ class CalculadorPagosCierre
         foreach ($filas as $key => $fila) {
             $filas[$key]['total_antes'] = round($antes[$fila['id_trab']] ?? 0, 2);
             $filas[$key]['total_despues'] = round($despues[$fila['id_trab']] ?? 0, 2);
+            $filas[$key]['nombre'] = $trabajadores->get($fila['id_trab'])?->nombre_completo
+                ?? 'Trabajador #'.$fila['id_trab'];
         }
 
-        return array_values($filas);
+        $porConcepto = [];
+        foreach ($filas as $fila) {
+            $porConcepto[$fila['concepto']] = round(($porConcepto[$fila['concepto']] ?? 0) + $fila['monto'], 2);
+        }
+
+        return [
+            'reportes' => $reportes->count(),
+            'total_facturado' => round((float) $reportes->sum('precio'), 2),
+            'total_sin_impuestos' => $totalSinImpuestos,
+            'filas' => array_values($filas),
+            'por_concepto' => $porConcepto,
+            'moderador_por_modelo' => $moderadorPorModelo,
+        ];
     }
 
     /**
