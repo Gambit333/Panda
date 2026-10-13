@@ -76,6 +76,13 @@ Route::middleware('auth')->group(function (): void {
             ->parameters(['trabajadores' => 'trabajador'])
             ->except(['show']);
 
+        // Ocultar / mostrar trabajadores (los que dejan la empresa): no se borran
+        // para no perder su historial, solo se apartan de la lista principal.
+        Route::post('trabajadores/{trabajador}/ocultar', [TrabajadorController::class, 'ocultar'])
+            ->name('trabajadores.ocultar');
+        Route::post('trabajadores/{trabajador}/mostrar', [TrabajadorController::class, 'mostrar'])
+            ->name('trabajadores.mostrar');
+
         // Gestión de cuentas: solo programadores.
         Route::middleware('programador')->group(function (): void {
             // Quita la contraseña: el usuario la vuelve a crear en su próximo ingreso.

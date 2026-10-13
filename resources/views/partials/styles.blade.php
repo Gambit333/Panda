@@ -211,6 +211,13 @@
     .page-btn.is-active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
     .page-btn.is-disabled { opacity: .4; border-style: dashed; }
     .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; background: var(--badge-bg); color: var(--primary); }
+    .badge.oculto { background: var(--danger-bg); color: var(--danger); }
+
+    /* Pestañas (p. ej. Activos / Ocultos) */
+    .tabs { display: inline-flex; gap: .25rem; padding: .25rem; background: var(--surface-alt); border: 1px solid var(--border); border-radius: .6rem; }
+    .tab { display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .85rem; border-radius: .45rem; font-size: .82rem; font-weight: 600; color: var(--muted); text-decoration: none; white-space: nowrap; }
+    .tab:hover { color: var(--ink); }
+    .tab.is-active { background: var(--surface); color: var(--primary); box-shadow: 0 1px 2px rgba(0, 0, 0, .06); }
     .mt-4 { margin-top: 1rem; }
     .mb-4 { margin-bottom: 1rem; }
     .flex-between { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }

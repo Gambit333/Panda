@@ -38,6 +38,7 @@ class Trabajador extends Model implements AuthenticatableContract
         'bloqueado',
         'bloqueado_hasta',
         'porcentaje',
+        'oculto',
     ];
 
     protected $hidden = [
@@ -74,6 +75,7 @@ class Trabajador extends Model implements AuthenticatableContract
             'bloqueado_hasta' => 'datetime',
             'intentos_fallidos' => 'integer',
             'porcentaje' => 'decimal:2',
+            'oculto' => 'boolean',
         ];
     }
 

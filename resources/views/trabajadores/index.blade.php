@@ -4,9 +4,30 @@
 
 @section('content')
     <div class="flex-between mb-4">
-        <p class="muted">Empleados registrados en el sistema y sus roles asignados.</p>
+        <div>
+            <p class="muted">Empleados registrados en el sistema y sus roles asignados.</p>
+            <div class="tabs mt-4">
+                <a href="{{ route('trabajadores.index') }}" class="tab {{ $estado === 'activos' ? 'is-active' : '' }}">
+                    Activos
+                </a>
+                <a href="{{ route('trabajadores.index', ['estado' => 'ocultos']) }}" class="tab {{ $estado === 'ocultos' ? 'is-active' : '' }}">
+                    Ocultos
+                    @if (($totalOcultos ?? 0) > 0)
+                        <span class="badge">{{ $totalOcultos }}</span>
+                    @endif
+                </a>
+            </div>
+        </div>
         <a href="{{ route('trabajadores.create') }}" class="btn btn-primary">+ Nuevo trabajador</a>
     </div>
+
+    @if ($estado === 'ocultos')
+        <div class="flash info mb-4">
+            Aquí aparecen los trabajadores que se ocultaron, por ejemplo quienes dejaron la empresa.
+            No se eliminan para no perder su historial de reportes y pagos; usa <strong>Mostrar</strong>
+            para devolverlos a la lista de activos.
+        </div>
+    @endif
 
     @if (auth()->user()?->esProgramador())
         <div class="flash info mb-4">
@@ -35,7 +56,12 @@
                     @forelse ($trabajadores as $trabajador)
                         <tr>
                             <td class="col-id">#{{ $trabajador->id_trab }}</td>
-                            <td><strong>{{ $trabajador->nombre }} {{ $trabajador->apellido }}</strong></td>
+                            <td>
+                                <strong>{{ $trabajador->nombre }} {{ $trabajador->apellido }}</strong>
+                                @if ($trabajador->oculto)
+                                    <span class="badge oculto">Oculto</span>
+                                @endif
+                            </td>
                             <td><span class="badge">{{ $trabajador->rol?->rol ?? 'Sin Rol' }}</span></td>
                             <td>
                                 @if ($trabajador->porcentaje !== null)
@@ -78,6 +104,19 @@
                             <td>
                                 <div class="actions">
                                     <a href="{{ route('trabajadores.edit', $trabajador) }}" class="btn btn-secondary btn-sm">Editar</a>
+                                    @if ($trabajador->oculto)
+                                        <form class="inline" method="POST" action="{{ route('trabajadores.mostrar', $trabajador) }}"
+                                              onsubmit="return confirm('¿Mostrar de nuevo a este trabajador en la lista principal?');">
+                                            @csrf
+                                            <button class="btn btn-primary btn-sm">Mostrar</button>
+                                        </form>
+                                    @else
+                                        <form class="inline" method="POST" action="{{ route('trabajadores.ocultar', $trabajador) }}"
+                                              onsubmit="return confirm('¿Ocultar a este trabajador? No se borra: pasa a la pestaña «Ocultos» y puedes volver a mostrarlo.');">
+                                            @csrf
+                                            <button class="btn btn-secondary btn-sm">Ocultar</button>
+                                        </form>
+                                    @endif
                                     @if (auth()->user()?->esProgramador())
                                         <form class="inline" method="POST" action="{{ route('trabajadores.password.eliminar', $trabajador) }}"
                                               onsubmit="return confirm('¿Eliminar la contraseña de este trabajador? Podrá crear una nueva en su próximo ingreso.');">
@@ -102,7 +141,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="empty">No hay trabajadores registrados.</td></tr>
+                        <tr><td colspan="7" class="empty">{{ $estado === 'ocultos' ? 'No hay trabajadores ocultos.' : 'No hay trabajadores registrados.' }}</td></tr>
                     @endforelse
                 </tbody>
 

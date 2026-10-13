@@ -14,11 +14,21 @@ use Illuminate\View\View;
 
 class TrabajadorController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $trabajadores = Trabajador::with('rol')->orderBy('id_trab')->paginate(15);
+        // Pestaña "Activos" (por defecto) u "Ocultos": los trabajadores que
+        // dejaron la empresa y se apartan de la lista principal sin borrarlos.
+        $estado = $request->query('estado') === 'ocultos' ? 'ocultos' : 'activos';
 
-        return view('trabajadores.index', compact('trabajadores'));
+        $trabajadores = Trabajador::with('rol')
+            ->where('oculto', $estado === 'ocultos')
+            ->orderBy('id_trab')
+            ->paginate(15)
+            ->withQueryString();
+
+        $totalOcultos = Trabajador::where('oculto', true)->count();
+
+        return view('trabajadores.index', compact('trabajadores', 'estado', 'totalOcultos'));
     }
 
     public function create(): View
@@ -97,6 +107,31 @@ class TrabajadorController extends Controller
         $trabajador->delete();
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador eliminado correctamente.');
+    }
+
+    /**
+     * Aparta a un trabajador de la lista principal (por ejemplo, quien dejó la
+     * empresa). No borra nada: solo marca `oculto`, así se conserva el historial.
+     */
+    public function ocultar(Trabajador $trabajador): RedirectResponse
+    {
+        if ($trabajador->id_trab === auth()->id()) {
+            return back()->withErrors(['trabajador' => 'No puedes ocultar tu propio usuario.']);
+        }
+
+        $trabajador->update(['oculto' => true]);
+
+        return redirect()->route('trabajadores.index')
+            ->with('success', $trabajador->nombre.' '.$trabajador->apellido.' quedó oculto. Puedes verlo en la pestaña «Ocultos».');
+    }
+
+    /** Devuelve a la lista principal un trabajador que estaba oculto. */
+    public function mostrar(Trabajador $trabajador): RedirectResponse
+    {
+        $trabajador->update(['oculto' => false]);
+
+        return redirect()->route('trabajadores.index')
+            ->with('success', $trabajador->nombre.' '.$trabajador->apellido.' volvió a la lista de trabajadores activos.');
     }
 
     /**
