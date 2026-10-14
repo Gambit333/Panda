@@ -60,14 +60,22 @@ class ReportePagoController extends Controller
             $data['id_moderador'] = auth()->user()->getAuthIdentifier();
         }
 
-        if ($request->hasFile('comprobante')) {
-            $data['comprobante'] = $this->guardarComprobante($request->file('comprobante'));
+        foreach ([1, 2] as $slot) {
+            $campo = $this->campoComprobante($slot);
+
+            if ($request->hasFile($campo)) {
+                $data[$campo] = $this->guardarComprobante($request->file($campo));
+            }
         }
 
         $reporte = ReportePago::create($data);
 
-        if ($request->hasFile('comprobante')) {
-            $this->guardarComprobanteBD($reporte, $request->file('comprobante'));
+        foreach ([1, 2] as $slot) {
+            $campo = $this->campoComprobante($slot);
+
+            if ($request->hasFile($campo)) {
+                $this->guardarComprobanteBD($reporte, $request->file($campo), $slot);
+            }
         }
 
         return redirect()->route('reportes.index')->with('success', 'Reporte de pago creado correctamente.');
@@ -87,9 +95,7 @@ class ReportePagoController extends Controller
 
         $moderadores = $this->trabajadoresPorRol(['moderador', 'chatter']);
 
-        if ($reporte->comprobante) {
-            $reporte->load('comprobanteBinario');
-        }
+        $reporte->load('comprobanteBinario');
 
         $metodosPago = MetodoPago::all();
 
@@ -108,18 +114,27 @@ class ReportePagoController extends Controller
             $data['id_moderador'] = $reporte->id_moderador;
         }
 
-        if ($request->hasFile('comprobante')) {
-            $this->eliminarComprobante($reporte);
-            $data['comprobante'] = $this->guardarComprobante($request->file('comprobante'));
-        } elseif ($request->boolean('eliminar_comprobante')) {
-            $this->eliminarComprobante($reporte);
-            $data['comprobante'] = null;
+        foreach ([1, 2] as $slot) {
+            $campo = $this->campoComprobante($slot);
+            $eliminar = 'eliminar_'.$campo;
+
+            if ($request->hasFile($campo)) {
+                $this->eliminarImagenComprobante($reporte, $slot);
+                $data[$campo] = $this->guardarComprobante($request->file($campo));
+            } elseif ($request->boolean($eliminar)) {
+                $this->eliminarImagenComprobante($reporte, $slot);
+                $data[$campo] = null;
+            }
         }
 
         $reporte->update($data);
 
-        if ($request->hasFile('comprobante')) {
-            $this->guardarComprobanteBD($reporte, $request->file('comprobante'));
+        foreach ([1, 2] as $slot) {
+            $campo = $this->campoComprobante($slot);
+
+            if ($request->hasFile($campo)) {
+                $this->guardarComprobanteBD($reporte, $request->file($campo), $slot);
+            }
         }
 
         return redirect()->route('reportes.index')->with('success', 'Reporte de pago actualizado correctamente.');
@@ -175,7 +190,15 @@ class ReportePagoController extends Controller
             'descripcion' => ['nullable', 'string'],
             'comprobante' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:4096'],
             'eliminar_comprobante' => ['sometimes', 'boolean'],
+            'comprobante_2' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:4096'],
+            'eliminar_comprobante_2' => ['sometimes', 'boolean'],
         ]);
+    }
+
+    /** Nombre del campo/columna del comprobante según su ranura (1 o 2). */
+    private function campoComprobante(int $slot): string
+    {
+        return $slot === 2 ? 'comprobante_2' : 'comprobante';
     }
 
     /**
@@ -199,21 +222,32 @@ class ReportePagoController extends Controller
 
     /**
      * Persiste una copia del comprobante en la BD (tabla `comprobantes`) para
-     * que sobreviva a los deploys con storage efímero. Si ya existía una copia
-     * para el reporte se reemplaza.
+     * que sobreviva a los deploys con storage efímero. La ranura 1 usa las
+     * columnas `mime/tamano/imagen` y la 2 las `mime2/tamano2/imagen2` de la
+     * misma fila (una fila por reporte).
      */
-    private function guardarComprobanteBD(ReportePago $reporte, UploadedFile $archivo): void
+    private function guardarComprobanteBD(ReportePago $reporte, UploadedFile $archivo, int $slot = 1): void
     {
         $comp = $this->binarioComprobante($archivo);
 
-        Comprobante::updateOrCreate(
-            ['id_reporte' => $reporte->id_reporte],
-            [
-                'mime' => $comp['mime'],
-                'tamano' => strlen($comp['binario']),
-                'imagen' => base64_encode($comp['binario']),
-            ]
-        );
+        $copia = Comprobante::firstOrNew(['id_reporte' => $reporte->id_reporte]);
+
+        if ($slot === 2) {
+            $copia->mime2 = $comp['mime'];
+            $copia->tamano2 = strlen($comp['binario']);
+            $copia->imagen2 = base64_encode($comp['binario']);
+        } else {
+            $copia->mime = $comp['mime'];
+            $copia->tamano = strlen($comp['binario']);
+            $copia->imagen = base64_encode($comp['binario']);
+        }
+
+        // `imagen` es NOT NULL en la tabla: si aún no hay comprobante 1 se deja vacío.
+        if ($copia->imagen === null) {
+            $copia->imagen = '';
+        }
+
+        $copia->save();
     }
 
     /**
@@ -291,13 +325,52 @@ class ReportePagoController extends Controller
         }
     }
 
+    /** Borra los dos comprobantes (disco + BD) de un reporte. */
     private function eliminarComprobante(ReportePago $reporte): void
     {
-        if ($reporte->comprobante && Storage::disk('public')->exists($reporte->comprobante)) {
-            Storage::disk('public')->delete($reporte->comprobante);
+        foreach ([$reporte->comprobante, $reporte->comprobante_2] as $ruta) {
+            if ($ruta && Storage::disk('public')->exists($ruta)) {
+                Storage::disk('public')->delete($ruta);
+            }
         }
 
         // También se quita la copia guardada en BD (si existía).
         Comprobante::where('id_reporte', $reporte->id_reporte)->delete();
+    }
+
+    /**
+     * Borra solo el comprobante indicado (disco + su copia en BD). Si el otro
+     * comprobante sigue presente se conserva la fila; si no queda ninguno, se
+     * elimina la fila de `comprobantes`.
+     */
+    private function eliminarImagenComprobante(ReportePago $reporte, int $slot): void
+    {
+        $ruta = $slot === 2 ? $reporte->comprobante_2 : $reporte->comprobante;
+
+        if ($ruta && Storage::disk('public')->exists($ruta)) {
+            Storage::disk('public')->delete($ruta);
+        }
+
+        $copia = Comprobante::where('id_reporte', $reporte->id_reporte)->first();
+
+        if ($copia === null) {
+            return;
+        }
+
+        if ($slot === 2) {
+            $copia->mime2 = null;
+            $copia->tamano2 = null;
+            $copia->imagen2 = null;
+        } else {
+            $copia->mime = 'image/jpeg';
+            $copia->tamano = 0;
+            $copia->imagen = '';
+        }
+
+        if (! filled($copia->imagen) && ! filled($copia->imagen2)) {
+            $copia->delete();
+        } else {
+            $copia->save();
+        }
     }
 }

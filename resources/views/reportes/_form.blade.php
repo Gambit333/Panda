@@ -97,21 +97,42 @@
         @error('descripcion') <div class="text-danger">{{ $message }}</div> @enderror
     </div>
 
+    @php
+        $comprobante1 = $reporte?->comprobante_url;
+        $comprobante2 = $reporte?->comprobante_2_url;
+    @endphp
+
     <div class="form-group">
-        <label>Comprobante de pago (imagen)</label>
-        @if ($reporte?->comprobante_url)
+        <label>Comprobante de pago 1 (imagen)</label>
+        @if ($comprobante1)
             <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
-                <a href="{{ $reporte->comprobante_url }}" target="_blank">
-                    <img src="{{ $reporte->comprobante_url }}" alt="Comprobante actual" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">
+                <a href="{{ $comprobante1 }}" target="_blank">
+                    <img src="{{ $comprobante1 }}" alt="Comprobante 1 actual" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">
                 </a>
                 <label style="font-weight:400;">
-                    <input type="checkbox" name="eliminar_comprobante" value="1"> <span class="muted">Eliminar comprobante actual</span>
+                    <input type="checkbox" name="eliminar_comprobante" value="1"> <span class="muted">Eliminar comprobante 1</span>
                 </label>
             </div>
         @endif
         <input type="file" name="comprobante" accept="image/*">
         @error('comprobante') <div class="text-danger">{{ $message }}</div> @enderror
-        <small class="muted">Se guarda en disco y se comprime; la BD solo almacena la ruta. Máx. 4 MB.</small>
+    </div>
+
+    <div class="form-group">
+        <label>Comprobante de pago 2 (imagen, opcional)</label>
+        @if ($comprobante2)
+            <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
+                <a href="{{ $comprobante2 }}" target="_blank">
+                    <img src="{{ $comprobante2 }}" alt="Comprobante 2 actual" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">
+                </a>
+                <label style="font-weight:400;">
+                    <input type="checkbox" name="eliminar_comprobante_2" value="1"> <span class="muted">Eliminar comprobante 2</span>
+                </label>
+            </div>
+        @endif
+        <input type="file" name="comprobante_2" accept="image/*">
+        @error('comprobante_2') <div class="text-danger">{{ $message }}</div> @enderror
+        <small class="muted">Puedes adjuntar hasta 2 comprobantes por reporte. Se guardan en disco y en la BD; máx. 4 MB cada uno.</small>
     </div>
 
     <div class="flex-between mt-4">

@@ -29,6 +29,7 @@ class ReportePago extends Model
         'id_cierre',
         'descripcion',
         'comprobante',
+        'comprobante_2',
     ];
 
     protected function casts(): array
@@ -71,6 +72,40 @@ class ReportePago extends Model
         // Si hay copia en la BD se sirve por la ruta comprobantes.show; si no,
         // se usa la ruta del disco (compatibilidad con reportes antiguos).
         if ($this->comprobanteBinario !== null && filled($this->comprobanteBinario->imagen)) {
+            return route('comprobantes.show', $this->id_reporte);
+        }
+
+        return $this->comprobante ? Storage::disk('public')->url($this->comprobante) : null;
+    }
+
+    public function getComprobante2UrlAttribute(): ?string
+    {
+        return $this->urlComprobante(2);
+    }
+
+    /**
+     * URLs de los comprobantes presentes (hasta 2), en orden.
+     *
+     * @return array<int, string>
+     */
+    public function getComprobanteUrlsAttribute(): array
+    {
+        return array_values(array_filter([$this->comprobante_url, $this->comprobante_2_url]));
+    }
+
+    private function urlComprobante(int $slot): ?string
+    {
+        $blob = $this->comprobanteBinario;
+
+        if ($slot === 2) {
+            if ($blob !== null && filled($blob->imagen2)) {
+                return route('comprobantes.show', [$this->id_reporte, 2]);
+            }
+
+            return $this->comprobante_2 ? Storage::disk('public')->url($this->comprobante_2) : null;
+        }
+
+        if ($blob !== null && filled($blob->imagen)) {
             return route('comprobantes.show', $this->id_reporte);
         }
 

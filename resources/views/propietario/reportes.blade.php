@@ -36,13 +36,13 @@
                                 <td>{{ $reporte->fecha_reporte?->format('d/m/Y') ?? '-' }}</td>
                                 <td class="positive" style="font-weight:bold;">${{ number_format($reporte->precio, 2) }}</td>
                                 <td>
-                                    @if ($reporte->comprobante_url)
-                                        <a href="{{ $reporte->comprobante_url }}" target="_blank" title="Ver comprobante">
-                                            <img src="{{ $reporte->comprobante_url }}" alt="Comprobante" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
+                                    @forelse ($reporte->comprobante_urls as $url)
+                                        <a href="{{ $url }}" target="_blank" title="Ver comprobante">
+                                            <img src="{{ $url }}" alt="Comprobante" style="width:40px;height:40px;object-fit:cover;border-radius:6px;margin-right:2px;">
                                         </a>
-                                    @else
+                                    @empty
                                         <span class="muted">-</span>
-                                    @endif
+                                    @endforelse
                                 </td>
                             </tr>
                         @empty

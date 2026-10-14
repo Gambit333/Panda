@@ -68,6 +68,25 @@ class ComprobanteBdTest extends TestCase
             ->assertSee('/comprobantes/'.$ctx['reporte']->id_reporte);
     }
 
+    public function test_sirve_el_segundo_comprobante_desde_la_base_de_datos(): void
+    {
+        $ctx = $this->armarReporte();
+
+        Comprobante::where('id_reporte', $ctx['reporte']->id_reporte)->update([
+            'mime2' => 'image/jpeg',
+            'tamano2' => 3,
+            'imagen2' => base64_encode('PNG'),
+        ]);
+
+        $this->actingAs($ctx['admin']);
+
+        $respuesta = $this->get('/comprobantes/'.$ctx['reporte']->id_reporte.'/2');
+
+        $respuesta->assertOk();
+        $this->assertSame('PNG', $respuesta->getContent());
+        $this->assertEquals('image/jpeg', $respuesta->headers->get('Content-Type'));
+    }
+
     public function test_sin_copia_en_bd_sirve_la_del_disco(): void
     {
         $ctx = $this->armarReporte();

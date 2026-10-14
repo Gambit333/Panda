@@ -29,9 +29,12 @@ Route::middleware('auth')->group(function (): void {
 
     // Comprobante de un reporte: lo sirve la copia en BD (`comprobantes`) o la
     // del disco. Lo ve quien puede ver el reporte (superroles, modelo/moderador
-    // del reporte o el propietario del método de pago).
+    // del reporte o el propietario del método de pago). `{n?}` = 1 (por defecto)
+    // o 2 para el segundo comprobante del mismo reporte.
     Route::middleware('auth')->group(function (): void {
-        Route::get('comprobantes/{reporte}', [ComprobanteController::class, 'show'])->name('comprobantes.show');
+        Route::get('comprobantes/{reporte}/{n?}', [ComprobanteController::class, 'show'])
+            ->whereNumber('n')
+            ->name('comprobantes.show');
     });
 
     // Sección propia de los dueños de métodos de pago: solo fecha, precio y

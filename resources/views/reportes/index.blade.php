@@ -67,13 +67,13 @@
                                 @endif
                             </td>
                             <td>
-                                @if ($reporte->comprobante_url)
-                                    <a href="{{ $reporte->comprobante_url }}" target="_blank" title="Ver comprobante">
-                                        <img src="{{ $reporte->comprobante_url }}" alt="Comprobante" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
+                                @forelse ($reporte->comprobante_urls as $url)
+                                    <a href="{{ $url }}" target="_blank" title="Ver comprobante">
+                                        <img src="{{ $url }}" alt="Comprobante" style="width:40px;height:40px;object-fit:cover;border-radius:6px;margin-right:2px;">
                                     </a>
-                                @else
+                                @empty
                                     <span class="muted">-</span>
-                                @endif
+                                @endforelse
                             </td>
                             <td>
                                 <div class="actions">

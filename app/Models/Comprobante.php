@@ -19,10 +19,14 @@ class Comprobante extends Model
         'mime',
         'tamano',
         'imagen',
+        'mime2',
+        'tamano2',
+        'imagen2',
     ];
 
     protected $hidden = [
         'imagen',
+        'imagen2',
     ];
 
     public function reportePago(): BelongsTo
@@ -34,5 +38,11 @@ class Comprobante extends Model
     public function getBinarioAttribute(): string
     {
         return (string) base64_decode((string) $this->imagen);
+    }
+
+    /** Segundo comprobante del reporte, ya decodificado. */
+    public function getBinario2Attribute(): string
+    {
+        return (string) base64_decode((string) $this->imagen2);
     }
 }
