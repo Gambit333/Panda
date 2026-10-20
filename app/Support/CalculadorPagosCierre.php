@@ -25,12 +25,17 @@ use Illuminate\Support\Facades\DB;
  *     salen del TOTAL sin impuestos (Σ precio − 15%) del cierre, cada uno con su %:
  *     20% rol `ceo`, 1.5% a cada rol `admin`, 1.5% a cada rol `support` y 1.5% a cada
  *     rol `programador` (ceo/admin/support → concepto `admin`; programador → `programador`).
+ *     Ese total se resta una vez (base compartida para TODOS los administrativos):
+ *     TOTAL − ventas netas de los administrativos que a la vez participaron como
+ *     modelo o moderador. Como la misma persona puede tener varias fichas (una como
+ *     modelo y otra como ceo, cada una con su %), se reconocen por nombre+apellido.
+ *     Si nadie de la sección administrativa vendió, la base es el total completo.
+ *     Única excepción (BASE_COMPLETA): María Pinto siempre calcula sobre el total
+ *     completo, sin restar nada.
  *
- * No hay casos especiales por persona: quien quiera un reparto distinto (p. ej. a
- * María Brea cobrando como modelo o a María Pinto cobrando de la sección
- * administrativa) lo define con su propio `porcentaje` y el rol que le corresponda.
- * Un solo campo `porcentaje` por trabajador: se aplica en todos los contextos en los
- * que participe.
+ * Los porcentajes se configuran en la ficha (un solo campo `porcentaje`, vale para
+ * todos los contextos del trabajador). La única excepción por persona es
+ * `BASE_COMPLETA` (María Pinto), para su parte administrativa.
  */
 class CalculadorPagosCierre
 {
@@ -49,6 +54,15 @@ class CalculadorPagosCierre
     private const ADMIN_SUPPORT = 1.5;
 
     private const ADMIN_PROGRAMADOR = 1.5;
+
+    /**
+     * Única excepción por persona: calcula su parte administrativa sobre el
+     * total completo (sin restar las ventas netas de los administrativos).
+     * Formato [nombre, apellido] en minúsculas sin acentos.
+     */
+    private const BASE_COMPLETA = [
+        ['maria', 'pinto'],
+    ];
 
     public const CONCEPTOS = [
         'modelo' => 'Pago como modelo',
@@ -166,19 +180,57 @@ class CalculadorPagosCierre
         }
 
         if ($totalSinImpuestos > 0) {
+            // Base compartida: al total sin impuestos se le restan (una sola vez) las
+            // ventas netas de los administrativos que además vendieron como modelo o
+            // moderador. Como una misma persona puede tener varias fichas (p. ej. una
+            // como modelo y otra como ceo, cada una con su porcentaje), se reconocen
+            // por nombre+apellido: las ventas de TODAS sus fichas se restan.
+            $ventasAdministrativos = 0.0;
+            foreach ($this->idsVentasAdministrativos($ceo, $admins, $soportes, $programadores) as $idVenta) {
+                $ventasAdministrativos = round($ventasAdministrativos + ($despues[$idVenta] ?? 0), 2);
+            }
+            $baseCompartida = max(0.0, round($totalSinImpuestos - $ventasAdministrativos, 2));
+
             $pctCeo = $this->porcentaje($ceo, self::ADMIN_CEO);
-            $this->sumar($filas, $ceo?->id_trab, 'admin', $totalSinImpuestos * $pctCeo, $this->txt($pctCeo).'% del total sin impuestos (rol ceo)');
+            $this->sumar(
+                $filas,
+                $ceo?->id_trab,
+                'admin',
+                $this->baseAdministrativa($ceo, $baseCompartida, $totalSinImpuestos) * $pctCeo,
+                $this->notaAdministrativa($pctCeo, 'rol ceo', $ceo, $baseCompartida, $totalSinImpuestos)
+            );
+
             foreach ($admins as $admin) {
                 $pctAdmin = $this->porcentaje($admin, self::ADMIN_CADA);
-                $this->sumar($filas, $admin->id_trab, 'admin', $totalSinImpuestos * $pctAdmin, $this->txt($pctAdmin).'% del total sin impuestos (cada admin)');
+                $this->sumar(
+                    $filas,
+                    $admin->id_trab,
+                    'admin',
+                    $this->baseAdministrativa($admin, $baseCompartida, $totalSinImpuestos) * $pctAdmin,
+                    $this->notaAdministrativa($pctAdmin, 'cada admin', $admin, $baseCompartida, $totalSinImpuestos)
+                );
             }
+
             foreach ($soportes as $soporte) {
                 $pctSupport = $this->porcentaje($soporte, self::ADMIN_SUPPORT);
-                $this->sumar($filas, $soporte->id_trab, 'admin', $totalSinImpuestos * $pctSupport, $this->txt($pctSupport).'% del total sin impuestos (rol support)');
+                $this->sumar(
+                    $filas,
+                    $soporte->id_trab,
+                    'admin',
+                    $this->baseAdministrativa($soporte, $baseCompartida, $totalSinImpuestos) * $pctSupport,
+                    $this->notaAdministrativa($pctSupport, 'rol support', $soporte, $baseCompartida, $totalSinImpuestos)
+                );
             }
+
             foreach ($programadores as $programador) {
                 $pctProgramador = $this->porcentaje($programador, self::ADMIN_PROGRAMADOR);
-                $this->sumar($filas, $programador->id_trab, 'programador', $totalSinImpuestos * $pctProgramador, $this->txt($pctProgramador).'% del total sin impuestos (rol programador)');
+                $this->sumar(
+                    $filas,
+                    $programador->id_trab,
+                    'programador',
+                    $this->baseAdministrativa($programador, $baseCompartida, $totalSinImpuestos) * $pctProgramador,
+                    $this->notaAdministrativa($pctProgramador, 'rol programador', $programador, $baseCompartida, $totalSinImpuestos)
+                );
             }
         }
 
@@ -203,6 +255,124 @@ class CalculadorPagosCierre
             'por_concepto' => $porConcepto,
             'moderador_por_modelo' => $moderadorPorModelo,
         ];
+    }
+
+    /**
+     * IDs únicos de todos los trabajadores de la sección administrativa.
+     *
+     * @param  Collection<int, Trabajador>  ...$grupos
+     * @return array<int, int>
+     */
+    private function idsAdministrativos(?Trabajador $ceo, Collection ...$grupos): array
+    {
+        $ids = $ceo !== null ? [$ceo->id_trab] : [];
+
+        foreach ($grupos as $grupo) {
+            foreach ($grupo as $trabajador) {
+                $ids[] = $trabajador->id_trab;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * IDs de TODAS las fichas de los administrativos que también vendieron como
+     * modelo o moderador, para restarlas de la base compartida. Como una misma
+     * persona puede tener varias fichas (p. ej. una como modelo y otra como ceo,
+     * cada una con su porcentaje), se reconocen por nombre+apellido: las ventas
+     * de cualquiera de sus fichas se descuentan. No incluye a la excepción
+     * (`BASE_COMPLETA`, p. ej. María Pinto), que nunca se resta.
+     *
+     * @param  Collection<int, Trabajador>  ...$grupos
+     * @return array<int, int>
+     */
+    private function idsVentasAdministrativos(?Trabajador $ceo, Collection ...$grupos): array
+    {
+        $administrativos = [];
+        if ($ceo !== null) {
+            $administrativos[] = $ceo;
+        }
+        foreach ($grupos as $grupo) {
+            foreach ($grupo as $trabajador) {
+                $administrativos[] = $trabajador;
+            }
+        }
+
+        $claves = [];
+        foreach ($administrativos as $trabajador) {
+            if ($this->baseCompleta($trabajador)) {
+                continue;
+            }
+            $claves[$this->clavePersona($trabajador)] = true;
+        }
+
+        if ($claves === []) {
+            return [];
+        }
+
+        return Trabajador::all()
+            ->filter(fn (Trabajador $t) => isset($claves[$this->clavePersona($t)]))
+            ->pluck('id_trab')
+            ->all();
+    }
+
+    /** Clave para reconocer a la misma persona: nombre+apellido normalizados. */
+    private function clavePersona(Trabajador $trabajador): string
+    {
+        return $this->normalizar($trabajador->nombre).'|'.$this->normalizar($trabajador->apellido);
+    }
+
+    /**
+     * Base de la sección administrativa para un trabajador. Salvo la excepción
+     * (`BASE_COMPLETA`, p. ej. María Pinto) usa la base compartida; la excepción
+     * usa el total sin impuestos completo.
+     */
+    private function baseAdministrativa(?Trabajador $trabajador, float $baseCompartida, float $totalSinImpuestos): float
+    {
+        if ($this->baseCompleta($trabajador)) {
+            return $totalSinImpuestos;
+        }
+
+        return $baseCompartida;
+    }
+
+    /**
+     * Nota de una fila administrativa; aclara cuando la base es el total completo
+     * por la excepción de `BASE_COMPLETA`.
+     */
+    private function notaAdministrativa(float $porcentaje, string $detalle, ?Trabajador $trabajador, float $baseCompartida, float $totalSinImpuestos): string
+    {
+        $excepcion = $this->baseCompleta($trabajador) && $baseCompartida < $totalSinImpuestos;
+
+        return $this->txt($porcentaje).'% del total sin impuestos completo'
+            .($excepcion ? ' (excepción)' : '')
+            .' ('.$detalle.')';
+    }
+
+    /** ¿El trabajador calcula su parte administrativa sobre el total completo? */
+    private function baseCompleta(?Trabajador $trabajador): bool
+    {
+        if ($trabajador === null) {
+            return false;
+        }
+
+        $clave = [
+            $this->normalizar($trabajador->nombre),
+            $this->normalizar($trabajador->apellido),
+        ];
+
+        return in_array($clave, self::BASE_COMPLETA, true);
+    }
+
+    /** Normaliza un nombre para comparar: minúsculas y sin acentos. */
+    private function normalizar(?string $texto): string
+    {
+        $texto = mb_strtolower(trim((string) $texto), 'UTF-8');
+
+        return strtr($texto, [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n',
+        ]);
     }
 
     /**
